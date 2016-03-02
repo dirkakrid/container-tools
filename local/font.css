@@ -1,0 +1,11 @@
+body,
+html {
+  font-family: 'DejaVuSans';
+}
+
+code,
+kbd,
+pre,
+samp {
+  font-family: 'DejaVuSansMono';
+}

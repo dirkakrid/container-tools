@@ -1,0 +1,11 @@
+@media (min-width: 768px) {
+  .container-fluid {
+    border-bottom: 5px solid #555753;
+  }
+}
+
+@media (max-width: 765px) {
+  .navbar-header {
+    border-bottom: 5px solid #555753;
+  }
+}
