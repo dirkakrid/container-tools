@@ -1,0 +1,15 @@
+[Unit]
+Description=container-tools automatic start
+After=syslog.target network.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/container-autostart
+#ExecStop=
+Delegate=yes
+StandardOutput=syslog
+StandardError=syslog
+
+[Install]
+WantedBy=multi-user.target

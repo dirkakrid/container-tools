@@ -1,0 +1,47 @@
+#!/bin/sh
+
+# Open Infrastructure: container-tools
+# Copyright (C) 2014-2016 Daniel Baumann <daniel.baumann@open-infrastructure.net>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+set -e
+
+if [ ! -x /usr/bin/screen ]
+then
+	echo "'${NAME}': /usr/bin/screen - no such file." >&2
+	exit 1
+fi
+
+HOST="$(hostname -f)"
+
+HOME="${HOME:-/root}"
+SHELL="/bin/bash"
+export HOME SHELL
+
+cd "${HOME}"
+
+#screen -S container -A -d -m -t cnt bash -cl "cntsh && bash -l"
+screen -S container -A -d -m -t cnt bash -l
+
+for CONFIG in /etc/container-tools/config/*.conf
+do
+	if grep -Eqs "^ *cnt.autostart=true" "${CONFIG}" || grep -Eqs "^ *cnt.autostart=${HOST}" "${CONFIG}"
+	then
+		CONTAINER="$(basename ${CONFIG} .conf)"
+		TITLE="$(echo ${CONTAINER} | awk -F. '{ print $1 }')"
+
+		screen -S container -X screen -t ${TITLE} bash -cl "cnt start -n ${CONTAINER} && bash -l"
+	fi
+done

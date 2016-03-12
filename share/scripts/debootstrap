@@ -45,6 +45,11 @@ Parameters ()
 				shift 2
 				;;
 
+			--cnt.autostart)
+				# ignore
+				shift 2
+				;;
+
 			-s|--script)
 				# ignore
 				shift 2

@@ -1,6 +1,7 @@
 # container-tools: @NAME@
 
 [start]
+cnt.autostart=@CNT_AUTOSTART@
 bind=@BIND@
 boot=@BOOT@
 directory=@DIRECTORY@

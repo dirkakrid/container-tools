@@ -76,7 +76,18 @@ install: build
 	ln -s container.1 $(DESTDIR)/usr/share/man/man1/cnt.1
 	ln -s container-shell.1 $(DESTDIR)/usr/share/man/man1/cntsh.1
 
+	mkdir -p $(DESTDIR)/lib/systemd/system
+	cp -r share/systemd/* $(DESTDIR)/lib/systemd/system
+
 uninstall:
+	for FILE in share/systemd*; \
+	do \
+		if [ -e "$${FILE}" ]; \
+		then \
+			rm -f $(DESTDIR)/lib/systemd/system/$$(basename $${FILE}); \
+		fi; \
+	done
+
 	for SECTION in $$(seq 1 8); \
 	do \
 		for FILE in share/man/*.$${SECTION}; \
