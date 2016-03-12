@@ -54,6 +54,7 @@ build: share/man/*.txt
 
 install: build
 	mkdir -p $(DESTDIR)/etc/container-tools/config
+	mkdir -p $(DESTDIR)/etc/container-tools/debconf
 
 	mkdir -p $(DESTDIR)/usr/bin
 	cp -r bin/* $(DESTDIR)/usr/bin
@@ -63,6 +64,9 @@ install: build
 
 	mkdir -p $(DESTDIR)/usr/share/$(SOFTWARE)
 	cp -r VERSION.txt share/config share/scripts ${DESTDIR}/usr/share/$(SOFTWARE)
+
+	mkdir -p $(DESTDIR)/usr/share/doc/$(SOFTWARE)
+	cp -r share/doc $(DESTDIR)/usr/share/doc/$(SOFTWARE)
 
 	for SECTION in $$(seq 1 8); \
 	do \
@@ -103,6 +107,9 @@ uninstall:
 	rm -f $(DESTDIR)/usr/share/man/man1/cnt.1
 	rm -f $(DESTDIR)/usr/share/man/man1/cntsh.1
 
+	rm -rf $(DESTDIR)/usr/share/doc/$(SOFTWARE)
+	rmdir --ignore-fail-on-non-empty --parents $(DESTDIR)/usr/share/doc || true
+
 	rm -rf $(DESTDIR)/usr/share/$(SOFTWARE)
 	rmdir --ignore-fail-on-non-empty --parents $(DESTDIR)/usr/share || true
 
@@ -116,6 +123,7 @@ uninstall:
 	rmdir --ignore-fail-on-non-empty --parents $(DESTDIR)/usr/bin || true
 
 	rmdir --ignore-fail-on-non-empty --parents $(DESTDIR)/etc/container-tools/config || true
+	rmdir --ignore-fail-on-non-empty --parents $(DESTDIR)/etc/container-tools/debconf || true
 
 clean:
 	$(MAKE) -C share/man clean

@@ -1,0 +1,211 @@
+Template: cnt-debconf/title
+Type: title
+Description: Open Infrastructure: container-tools
+
+Template: cnt-debconf/distribution
+Type: select
+Default:
+Choices-C: ${CHOICES_C}
+Choices: ${CHOICES}
+Description: Distribution
+ Distribution.
+
+Template: cnt-debconf/parent-distribution
+Type: select
+Default:
+Choices-C: ${CHOICES_C}
+Choices: ${CHOICES}
+Description: for internal use; can be preseeded
+ Parent Distribution.
+
+Template: cnt-debconf/architecture
+Type: select
+Default:
+Choices-C: ${CHOICES_C}
+Choices: ${CHOICES}
+Description: Architecture
+ Architecture.
+
+Template: cnt-debconf/archives
+Type: multiselect
+Default:
+Choices-C: ${CHOICES_C}
+Choices: ${CHOICES}
+Description: Archives
+ Archives.
+
+Template: cnt-debconf/parent-archives
+Type: multiselect
+Default:
+Choices-C: ${CHOICES_C}
+Choices: ${CHOICES}
+Description: Parent Archives
+ Parent Archives.
+
+Template: cnt-debconf/mirror
+Type: string
+Default:
+Description: Mirror
+ Mirror.
+
+Template: cnt-debconf/mirror-security
+Type: string
+Default:
+Description: Mirror Security
+ Mirror Security.
+
+Template: cnt-debconf/parent-mirror
+Type: string
+Default:
+Description: Parent Mirror
+ Parent Mirror.
+
+Template: cnt-debconf/parent-mirror-security
+Type: string
+Default:
+Description: Parent Mirror Security
+ Parent Mirror Security.
+
+Template: cnt-debconf/archive-areas
+Type: multiselect
+Default:
+Choices: ${CHOICES}
+Description: Archive Areas
+ Archive Areas.
+
+Template: cnt-debconf/parent-archive-areas
+Type: multiselect
+Default:
+Choices: ${CHOICES}
+Description: Parent Archive Areas
+ Parent Archive Areas.
+
+Template: cnt-debconf/packages
+Type: string
+Default:
+Description: Packages
+ Packages.
+
+Template: cnt-debconf/root-password
+Type: string
+Default:
+Description: Root password
+ Root password.
+
+Template: cnt-debconf/network0/bridge
+Type: string
+Default:
+Description: Bridge
+ Bridge.
+
+Template: cnt-debconf/network0/ipv4-method
+Type: select
+Choices: dhcp, static, none
+Default:
+Description: Ethernet Interface Method (IPv4)?
+ What method should be used to configure the ethernet interface?
+ .
+ This defaults to dhcp and will require that you run a dhcp-server in your
+ network.
+
+Template: cnt-debconf/network0/ipv4-comment
+Type: string
+Default:
+Description: Ethernet Interface Comment (IPv4)?
+ What optional comment would you like to give to the ethernet interface?
+ .
+ This defaults to empty.
+
+Template: cnt-debconf/network0/ipv4-address
+Type: string
+Default:
+Description: Ethernet IP Address (IPv4)?
+ What should be the IP address of the current system?
+ .
+ This defaults to 192.168.1.2.
+
+Template: cnt-debconf/network0/ipv4-broadcast
+Type: string
+Default:
+Description: Ethernet Broadcast Address (IPv4)?
+ What should be the broadcast address of the current system?
+ .
+ This defaults to empty.
+
+Template: cnt-debconf/network0/ipv4-gateway
+Type: string
+Default:
+Description: Ethernet Gateway Address (IPv4)?
+ What should be the gateway address of the current system?
+ .
+ This defaults to empty.
+
+Template: cnt-debconf/network0/ipv4-netmask
+Type: string
+Default:
+Description: Ethernet Network Mask (IPv4)?
+ What should be the netmask of the current system?
+ .
+ This defaults to empty.
+
+Template: cnt-debconf/network0/ipv4-network
+Type: string
+Default:
+Description: Ethernet Network Address (IPv4)?
+ What should be the network address of the current system?
+ .
+ This defaults to empty.
+
+Template: cnt-debconf/network0/ipv4-post-up
+Type: string
+Default:
+Description: Ethernet post-up Command (IPv4)?
+ What should be the post-up command for eth0?
+ .
+ This defaults to empty.
+
+Template: cnt-debconf/network0/ipv4-post-down
+Type: string
+Default:
+Description: Ethernet post-down Command (IPv4)?
+ What should be the post-down command for eth0?
+ .
+ This defaults to empty.
+
+Template: cnt-debconf/nameserver/server
+Type: string
+Default:
+Description: Nameserver Addresses?
+ What should be the IP addresses of the nameservers of the current system?
+ .
+ This defaults to empty. Multiple nameservers can be separated by whitespace.
+
+Template: cnt-debconf/nameserver/domain
+Type: string
+Default:
+Description: Nameserver Local Domain Name?
+ What should be local domain name used for name resolution?
+ .
+ See resolv.conf(5) for more information about the 'domain' option.
+ .
+ This defaults to empty.
+
+Template: cnt-debconf/nameserver/search
+Type: string
+Default:
+Description: Nameserver Search List?
+ What should be search list for hostname lookups?
+ .
+ See resolv.conf(5) for more information about the 'search' option.
+ .
+ This defaults to empty.
+
+Template: cnt-debconf/nameserver/options
+Type: string
+Default:
+Description: Nameserver Resolver Options?
+ What should be the resolver options?
+ .
+ See resolv.conf(5) for more information about the 'options' option.
+ .
+ This defaults to empty.

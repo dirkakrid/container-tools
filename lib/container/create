@@ -103,7 +103,7 @@ then
 	exit 1
 fi
 
-SCRIPT="${SCRIPT:-debootstrap}"
+SCRIPT="${SCRIPT:-debian}"
 
 if [ ! -e "/usr/share/container-tools/scripts/${SCRIPT}" ]
 then

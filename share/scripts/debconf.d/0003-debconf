@@ -1,0 +1,1050 @@
+#!/bin/sh
+
+# Open Infrastructure: container-tools
+# Copyright (C) 2014-2016 Daniel Baumann <daniel.baumann@open-infrastructure.net>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+set -e
+
+DEBCONF_NOWARNINGS="true"
+export DEBCONF_NOWARNINGS
+
+. /usr/share/debconf/confmodule
+
+Distribution ()
+{
+	db_get cnt-debconf/distribution
+	DISTRIBUTION="${RET}" # select
+
+	if [ -z "${DISTRIBUTION}" ]
+	then
+		case "${MODE}" in
+			debian)
+				db_subst cnt-debconf/distribution CHOICES "Debian GNU/Linux 8 \"jessie\", Debian GNU/Linux 9 \"stretch\", Debian GNU/Linux unstable/sid"
+				db_subst cnt-debconf/distribution CHOICES_C "jessie, stretch, sid"
+
+				db_set cnt-debconf/distribution jessie
+				db_fset cnt-debconf/distribution seen false
+				;;
+
+			progress-linux)
+				db_subst cnt-debconf/distribution CHOICES "Progress Linux 3 (cairon), Progress Linux 3+ (cairon-backports)"
+				db_subst cnt-debconf/distribution CHOICES_C "cairon, cairon-backports"
+
+				db_set cnt-debconf/distribution cairon-backports
+				db_fset cnt-debconf/distribution seen false
+				;;
+		esac
+
+		db_settitle cnt-debconf/title
+		db_input high cnt-debconf/distribution || true
+		db_go
+
+		db_get cnt-debconf/distribution
+		DISTRIBUTION="${RET}" # select
+	fi
+
+	echo "DISTRIBUTION=\"${DISTRIBUTION}\"" >> "${DEBCONF_TMPDIR}/debconf.default"
+	export DISTRIBUTION
+}
+
+Parent_distribution ()
+{
+	db_get cnt-debconf/parent-distribution
+	PARENT_DISTRIBUTION="${RET}"
+
+	if [ -z "${PARENT_DISTRIBUTION}" ]
+	then
+		case "${MODE}" in
+			progress-linux)
+				case "${DISTRIBUTION}" in
+					cairon*)
+						PARENT_DISTRIBUTION="jessie"
+						;;
+				esac
+				;;
+
+			*)
+				PARENT_DISTRIBUTION="${DISTRIBUTION}"
+				;;
+		esac
+	fi
+
+	echo "PARENT_DISTRIBUTION=\"${PARENT_DISTRIBUTION}\"" >> "${DEBCONF_TMPDIR}/debconf.default"
+	export PARENT_DISTRIBUTION
+}
+
+Architecture ()
+{
+	case "$(dpkg --print-architecture)" in
+		amd64)
+			DEFAULT="amd64"
+			CHOICES="Automatic, 32-bit PC (i386), 64-bit PC (amd64)"
+			CHOICES_C="auto, i386, amd64"
+			;;
+
+		arm64)
+			DEFAULT="arm64"
+			CHOICES="Automatic, Rpi1 (armel), Rpi2 (armhf), Rpi3 (arm64)"
+			CHOICES_C="auto, armel, armhf, arm64"
+			;;
+
+		armel)
+			DEFAULT="armel"
+			CHOICES="Automatic, Rpi1 (armel)"
+			CHOICES_C="auto, armel"
+			;;
+
+		armhf)
+			DEFAULT="armhf"
+			CHOICES="Automatic, Rpi1 (armel), Rpi2 (armhf)"
+			CHOICES_C="auto, armel, armhf"
+			;;
+
+		i386)
+			case "$(uname -m)" in
+				x86_64)
+					DEFAULT="amd64"
+					CHOICES="Automatic, 32-bit PC (i386), 64-bit PC (amd64)"
+					CHOICES_C="auto, i386, amd64"
+					;;
+
+				*)
+					DEFAULT="i386"
+					CHOICES=""
+					CHOICES_C=""
+					;;
+			esac
+			;;
+
+		*)
+			echo "E: Architecture current not yet supported."
+			exit 1
+	esac
+
+	db_get cnt-debconf/architecture
+	ARCHITECTURE="${RET}" # select
+
+	if [ -z "${ARCHITECTURE}" ] && [ -n "${CHOICES}" ]
+	then
+		db_subst cnt-debconf/architecture CHOICES ${CHOICES}
+		db_subst cnt-debconf/architecture CHOICES_C ${CHOICES_C}
+
+		db_set cnt-debconf/architecture ${DEFAULT}
+		db_fset cnt-debconf/distribution seen false
+
+		db_settitle cnt-debconf/title
+		db_input high cnt-debconf/architecture || true
+		db_go
+
+		db_get cnt-debconf/architecture
+		ARCHITECTURE="${RET}" # select
+	fi
+
+	case "${ARCHITECTURE}" in
+		auto)
+			ARCHITECTURE="${DEFAULT}"
+			;;
+	esac
+
+	echo "ARCHITECTURE=\"${ARCHITECTURE}\"" >> "${DEBCONF_TMPDIR}/debconf.default"
+	export ARCHITECTURE
+}
+
+Archives ()
+{
+	db_get cnt-debconf/archives
+	ARCHIVES="${RET}" # multiselect
+
+	if [ -z "${ARCHIVES}" ]
+	then
+		case "${MODE}" in
+			debian)
+				case "${PARENT_DISTRIBUTION}" in
+					sid)
+						db_subst cnt-debconf/archives CHOICES "Experimental"
+						db_subst cnt-debconf/archives CHOICES_C "experimental"
+
+						db_set cnt-debconf/archives ""
+						db_fset cnt-debconf/archives seen false
+						;;
+
+					*)
+						db_subst cnt-debconf/archives CHOICES "Security, Updates, LTS, Backports, Proposed Updates"
+						db_subst cnt-debconf/archives CHOICES_C "${DISTRIBUTION}-security, ${DISTRIBUTION}-updates, ${DISTRIBUTION}-lts, ${DISTRIBUTION}-backports, ${DISTRIBUTION}-proposed-updates"
+
+						case "${PARENT_DISTRIBUTION}" in
+							sid)
+								db_set cnt-debconf/archives ""
+								;;
+
+							*)
+								#db_set cnt-debconf/archives "${DISTRIBUTION}-security, ${DISTRIBUTION}-updates, ${DISTRIBUTION}-lts, ${DISTRIBUTION}-backports"
+								db_set cnt-debconf/archives "${DISTRIBUTION}-security, ${DISTRIBUTION}-updates"
+								;;
+						esac
+
+						db_fset cnt-debconf/archives seen false
+						;;
+				esac
+				;;
+
+			progress-linux)
+				DIST="$(echo ${DISTRIBUTION} | sed -e 's|-backports||')"
+
+				db_subst cnt-debconf/archives CHOICES "staging, Security, Security (staging), Updates, Updates (staging), LTS, LTS (staging), Extras, Extras (staging), Backports, Backports (staging), Backports Extras, Backports Extras (staging)"
+				db_subst cnt-debconf/archives CHOICES_C "${DIST}-staging, ${DIST}-security, ${DIST}-security-staging, ${DIST}-updates, ${DIST}-updates-staging, ${DIST}-lts, ${DIST}-lts-staging, ${DIST}-extras, ${DIST}-extras-staging, ${DIST}-backports, ${DIST}-backports-staging, ${DIST}-backports-extras, ${DIST}-backports-extras-staging"
+
+				db_set cnt-debconf/archives "${DIST}-security, ${DIST}-updates, ${DIST}-lts, ${DIST}-extras, ${DIST}-backports, ${DIST}-backports-extras"
+				db_fset cnt-debconf/archives seen false
+				;;
+		esac
+
+		db_settitle cnt-debconf/title
+		db_input high cnt-debconf/archives || true
+		db_go
+
+		db_get cnt-debconf/archives
+		ARCHIVES="${RET}" # multiselect
+	fi
+
+	ARCHIVES="$(echo ${ARCHIVES} | sed -e 's|, | |g')"
+
+	echo "ARCHIVES=\"${ARCHIVES}\"" >> "${DEBCONF_TMPDIR}/debconf.default"
+	export ARCHIVES
+}
+
+Parent_archives ()
+{
+	db_get cnt-debconf/parent-archives
+	PARENT_ARCHIVES="${RET}" # multiselect (w/o empty)
+
+	if [ -z "${PARENT_ARCHIVES}" ]
+	then
+		case "${MODE}" in
+			progress-linux)
+				db_subst cnt-debconf/parent-archives CHOICES "Security, Updates, LTS, Backports, Proposed Updates"
+				db_subst cnt-debconf/parent-archives CHOICES_C "${PARENT_DISTRIBUTION}-security, ${PARENT_DISTRIBUTION}-updates, ${PARENT_DISTRIBUTION}-lts, ${PARENT_DISTRIBUTION}-backports, ${PARENT_DISTRIBUTION}-proposed-updates"
+
+				case "${PARENT_DISTRIBUTION}" in
+					*)
+						#db_set cnt-debconf/parent-archives "${PARENT_DISTRIBUTION}-security, ${PARENT_DISTRIBUTION}-lts, ${PARENT_DISTRIBUTION}-updates, ${PARENT_DISTRIBUTION}-backports"
+						db_set cnt-debconf/parent-archives "${PARENT_DISTRIBUTION}-security, ${PARENT_DISTRIBUTION}-updates"
+						;;
+				esac
+
+				db_fset cnt-debconf/parent-archives seen false
+
+				db_settitle cnt-debconf/title
+				db_input high cnt-debconf/parent-archives || true
+				db_go
+				;;
+
+			*)
+				db_subst cnt-debconf/parent-archives CHOICES "Security, Updates, LTS, Backports, Proposed Updates"
+				db_subst cnt-debconf/parent-archives CHOICES_C "${ARCHIVES}"
+
+				db_set cnt-debconf/parent-archives "${ARCHIVES}"
+				db_fset cnt-debconf/parent-archives seen true
+				;;
+		esac
+
+		db_get cnt-debconf/parent-archives
+		PARENT_ARCHIVES="${RET}" # multiselect (w/o empty)
+
+		if [ -z "${PARENT_ARCHIVES}" ]
+		then
+			case "${MODE}" in
+				progress-linux)
+					case "${PARENT_DISTRIBUTION}" in
+						*)
+							#PARENT_ARCHIVES="${PARENT_DISTRIBUTION}-security, ${PARENT_DISTRIBUTION}-updates, ${PARENT_DISTRIBUTION}-lts, ${PARENT_DISTRIBUTION}-backports"
+							PARENT_ARCHIVES="${PARENT_DISTRIBUTION}-security, ${PARENT_DISTRIBUTION}-updates"
+							;;
+					esac
+					;;
+
+				*)
+					PARENT_ARCHIVES="${ARCHIVES}"
+					;;
+			esac
+		fi
+	fi
+
+	PARENT_ARCHIVES="$(echo ${PARENT_ARCHIVES} | sed -e 's|, | |g')"
+
+	echo "PARENT_ARCHIVES=\"${PARENT_ARCHIVES}\"" >> "${DEBCONF_TMPDIR}/debconf.default"
+	export PARENT_ARCHIVES
+}
+
+Mirror ()
+{
+	db_get cnt-debconf/mirror
+	MIRROR="${RET}"
+
+	if [ -z "${MIRROR}" ]
+	then
+		case "${MODE}" in
+			debian)
+				db_set cnt-debconf/mirror http://httpredir.debian.org/debian
+				db_fset cnt-debconf/mirror seen false
+				;;
+
+			progress-linux)
+				db_set cnt-debconf/mirror http://cdn.archive.progress-linux.org/packages
+				db_fset cnt-debconf/mirror seen false
+				;;
+		esac
+
+		db_settitle cnt-debconf/title
+		db_input high cnt-debconf/mirror || true
+		db_go
+
+		db_get cnt-debconf/mirror
+		MIRROR="${RET}" # string (w/o empty)
+
+		if [ -z "${MIRROR}" ]
+		then
+			case "${MODE}" in
+				debian)
+					MIRROR="http://httpredir.debian.org/debian"
+					;;
+
+				progress-linux)
+					MIRROR="http://cdn.archive.progress-linux.org/packages"
+					;;
+			esac
+		fi
+	fi
+
+	echo "MIRROR=\"${MIRROR}\"" >> "${DEBCONF_TMPDIR}/debconf.default"
+	export MIRROR
+}
+
+Mirror_security ()
+{
+	if ! echo "${ARCHIVES}" | grep -qs "-security"
+	then
+		return 0
+	fi
+
+	db_get cnt-debconf/mirror-security
+	MIRROR_SECURITY="${RET}" # string (w/o empty)
+
+	if [ -z "${MIRROR_SECURITY}" ]
+	then
+		case "${MODE}" in
+			debian)
+				db_set cnt-debconf/mirror-security http://security.debian.org
+				db_fset cnt-debconf/mirror-security seen false
+				;;
+
+			*)
+				db_set cnt-debconf/mirror-security ${MIRROR}
+				db_fset cnt-debconf/mirror-security seen true
+				;;
+		esac
+
+		db_settitle cnt-debconf/title
+		db_input high cnt-debconf/mirror-security || true
+		db_go
+
+		db_get cnt-debconf/mirror-security
+		MIRROR_SECURITY="${RET}" # string (w/o empty)
+
+		if [ -z "${MIRROR_SECURITY}" ]
+		then
+			case "${MODE}" in
+				debian)
+					MIRROR_SECURITY="http://security.debian.org"
+					;;
+
+				*)
+					MIRROR_SECURITY="${MIRROR}"
+					;;
+			esac
+		fi
+	fi
+
+	echo "MIRROR_SECURITY=\"${MIRROR_SECURITY}\"" >> "${DEBCONF_TMPDIR}/debconf.default"
+	export MIRROR_SECURITY
+}
+
+Parent_mirror ()
+{
+	db_get cnt-debconf/parent-mirror
+	PARENT_MIRROR="${RET}" # string (w/o empty)
+
+	if [ -z "${PARENT_MIRROR}" ]
+	then
+		case "${MODE}" in
+			progress-linux)
+				db_set cnt-debconf/parent-mirror http://httpredir.debian.org/debian
+				db_fset cnt-debconf/parent-mirror seen false
+
+				db_settitle cnt-debconf/title
+				db_input high cnt-debconf/parent-mirror || true
+				db_go
+				;;
+
+			*)
+				db_set cnt-debconf/parent-mirror ${MIRROR}
+				db_fset cnt-debconf/parent-mirror seen true
+				;;
+		esac
+
+		db_get cnt-debconf/parent-mirror
+		PARENT_MIRROR="${RET}" # string (w/o empty)
+
+		if [ -z "${PARENT_MIRROR}" ]
+		then
+			case "${MODE}" in
+				progress-linux)
+					PARENT_MIRROR="http://httpredir.debian.org/debian"
+					;;
+
+				*)
+					PARENT_MIRROR="${MIRROR}"
+					;;
+			esac
+		fi
+	fi
+
+	echo "PARENT_MIRROR=\"${PARENT_MIRROR}\"" >> "${DEBCONF_TMPDIR}/debconf.default"
+	export PARENT_MIRROR
+}
+
+Parent_mirror_security ()
+{
+	if ! echo "${PARENT_ARCHIVES}" | grep -qs "-security"
+	then
+		return 0
+	fi
+
+	db_get cnt-debconf/parent-mirror-security
+	PARENT_MIRROR_SECURITY="${RET}" # string (w/o empty)
+
+	if [ -z "${PARENT_MIRROR_SECURITY}" ]
+	then
+		case "${MODE}" in
+			progress-linux)
+				db_set cnt-debconf/parent-mirror-security http://security.debian.org
+				db_fset cnt-debconf/parent-mirror-security seen false
+
+				db_settitle cnt-debconf/title
+				db_input high cnt-debconf/parent-mirror-security || true
+				db_go
+				;;
+
+			*)
+				db_set cnt-debconf/parent-mirror-security ${MIRROR_SECURITY}
+				db_fset cnt-debconf/parent-mirror-security seen true
+				;;
+		esac
+
+		db_get cnt-debconf/parent-mirror-security
+		PARENT_MIRROR_SECURITY="${RET}" # string (w/o empty)
+
+		if [ -z "${PARENT_MIRROR_SECURITY}" ]
+		then
+			case "${MODE}" in
+				progress-linux)
+					PARENT_MIRROR_SECURITY="http://security.debian.org"
+					;;
+
+				*)
+					PARENT_MIRROR_SECURITY="${MIRROR_SECURITY}"
+					;;
+			esac
+		fi
+	fi
+
+	echo "PARENT_MIRROR_SECURITY=\"${PARENT_MIRROR_SECURITY}\"" >> "${DEBCONF_TMPDIR}/debconf.default"
+	export PARENT_MIRROR_SECURITY
+}
+
+Archive_areas ()
+{
+	db_get cnt-debconf/archive-areas
+	ARCHIVE_AREAS="${RET}"
+
+	if [ -z "${ARCHIVE_AREAS}" ]
+	then
+		case "${MODE}" in
+			progress-linux)
+				db_subst cnt-debconf/archive-areas CHOICES "main, contrib, non-free"
+
+				db_set cnt-debconf/archive-areas "main, contrib, non-free"
+				db_fset cnt-debconf/archive-areas seen false
+				;;
+
+			*)
+				db_subst cnt-debconf/archive-areas CHOICES "main, contrib, non-free"
+
+				db_set cnt-debconf/archive-areas "main"
+				db_fset cnt-debconf/archive-areas seen false
+				;;
+		esac
+
+		db_settitle cnt-debconf/title
+		db_input high cnt-debconf/archive-areas || true
+		db_go
+
+		db_get cnt-debconf/archive-areas
+		ARCHIVE_AREAS="${RET}" # multiselect (w/o empty)
+
+		if [ -z "${ARCHIVE_AREAS}" ]
+		then
+			case "${MODE}" in
+				debian)
+					ARCHIVE_AREAS="main"
+					;;
+
+				progress-linux)
+					ARCHIVE_AREAS="main, contrib, non-free"
+					;;
+			esac
+		fi
+	fi
+
+	ARCHIVE_AREAS="$(echo ${ARCHIVE_AREAS} | sed -e 's| ||g')"
+
+	echo "ARCHIVE_AREAS=\"${ARCHIVE_AREAS}\"" >> "${DEBCONF_TMPDIR}/debconf.default"
+	export ARCHIVE_AREAS
+}
+
+Parent_archive_areas ()
+{
+	db_get cnt-debconf/parent-archive-areas
+	PARENT_ARCHIVE_AREAS="${RET}" # multiselect (w/o empty)
+
+	if [ -z "${PARENT_ARCHIVE_AREAS}" ]
+	then
+		case "${MODE}" in
+			progress-linux)
+				db_subst cnt-debconf/parent-archive-areas CHOICES "main, contrib, non-free"
+
+				db_set cnt-debconf/parent-archive-areas "main, contrib, non-free"
+				db_fset cnt-debconf/parent-archive-areas seen false
+
+				db_settitle cnt-debconf/title
+				db_input high cnt-debconf/parent-archive-areas || true
+				db_go
+				;;
+
+			*)
+				db_subst cnt-debconf/parent-archive-areas CHOICES "${ARCHIVE_AREAS}"
+
+				db_set cnt-debconf/parent-archive-areas "${ARCHIVE_AREAS}"
+				db_fset cnt-debconf/parent-archive-areas seen true
+				;;
+		esac
+
+		db_get cnt-debconf/parent-archive-areas
+		PARENT_ARCHIVE_AREAS="${RET}" # multiselect (w/o empty)
+
+		if [ -z "${PARENT_ARCHIVE_AREAS}" ]
+		then
+			case "${MODE}" in
+				progress-linux)
+					PARENT_ARCHIVE_AREAS="main, contrib, non-free"
+					;;
+
+				*)
+					PARENT_ARCHIVE_AREAS="${ARCHIVE_AREAS}"
+					;;
+			esac
+		fi
+	fi
+
+	PARENT_ARCHIVE_AREAS="$(echo ${PARENT_ARCHIVE_AREAS} | sed -e 's| ||g')"
+
+	echo "PARENT_ARCHIVE_AREAS=\"${PARENT_ARCHIVE_AREAS}\"" >> "${DEBCONF_TMPDIR}/debconf.default"
+	export PARENT_ARCHIVE_AREAS
+}
+
+Packages ()
+{
+	db_get cnt-debconf/packages
+	PACKAGES="${RET}" # string (w/ empty)
+
+	if [ -z "${PACKAGES}" ]
+	then
+		db_settitle cnt-debconf/title
+		db_input high cnt-debconf/packages || true
+		db_go
+
+		db_get cnt-debconf/packages
+		PACKAGES="${RET}" # string (w/ empty)
+	fi
+
+	echo "PACKAGES=\"${PACKAGES}\"" >> "${DEBCONF_TMPDIR}/debconf.default"
+	export PACKAGES
+}
+
+Local_archives ()
+{
+	NUMBER="0"
+
+	while db_get cnt-debconf/archive${NUMBER}/repository && [ "${RET}" ]
+	do
+		mkdir -p "${DEBCONF_TMPDIR}/apt"
+
+		REPOSITORY="${RET#deb }"
+
+		LIST="archive${NUMBER}.list"
+		if db_get cnt-debconf/archive${NUMBER}/list
+		then
+			LIST="$(basename ${RET} .list).list"
+		fi
+
+		COMMENT=""
+		if db_get cnt-debconf/archive${NUMBER}/comment
+		then
+			COMMENT="${RET}"
+
+			echo "# ${COMMENT}" > "${DEBCONF_TMPDIR}/apt/${LIST}"
+		fi
+
+		echo "deb ${REPOSITORY}" >> "${DEBCONF_TMPDIR}/apt/${LIST}"
+
+		if db_get cnt-debconf/archive${NUMBER}/source && [ "$RET" = true ]
+		then
+			echo "deb-src ${REPOSITORY}" >> "${DEBCONF_TMPDIR}/apt/${LIST}"
+		fi
+
+		KEY=""
+		if db_get cnt-debconf/archive${NUMBER}/key
+		then
+			KEY="${RET}"
+
+			wget -q "${KEY}" -O "${DEBCONF_TMPDIR}/apt/$(basename ${LIST} .list).key"
+		fi
+
+		PREFERENCES_PACKAGE=""
+		PREFERENCES_PIN=""
+		PREFERENCES_PIN_PRIORITY=""
+		if db_get cnt-debconf/archive${NUMBER}/preferences-package
+		then
+			PREFERENCES_PACKAGE="${RET}"
+
+			if db_get cnt-debconf/archive${NUMBER}/preferences-pin
+			then
+				PREFERENCES_PIN="${RET}"
+			fi
+
+			if db_get cnt-debconf/archive${NUMBER}/preferences-pin-priority
+			then
+				PREFERENCES_PIN_PRIORITY="${RET}"
+			fi
+
+			if [ -n "${PREFERENCES_PACKAGE}" ] || [ -n "${PREFERENCES_PIN}" ] || [ -n "${PREFERENCES_PIN_PRIORITY}" ]
+			then
+
+cat > "${DEBCONF_TMPDIR}/apt/$(basename ${LIST} .list).pref" << EOF
+Package: ${PREFERENCES_PACKAGE}
+Pin: ${PREFERENCES_PIN}
+Pin-Priority: ${PREFERENCES_PIN_PRIORITY}
+EOF
+
+			fi
+		fi
+
+		NUMBER="$((${NUMBER} + 1))"
+	done
+}
+
+Network_defaults ()
+{
+	# FIXME:
+	#   * use interfaces.d where possible
+	#   * respect pre-existing interfaces (or interfaces.d)
+	#   * add support for bridges (make interface configuration more generic?)
+
+	NETWORK0_BRIDGE="${NETWORK0_BRIDGE:-br0}"
+	NETWORK0_IPV4_METHOD="${NETWORK0_IPV4_METHOD:-dhcp}"
+	NETWORK0_IPV4_ADDRESS="${NETWORK0_IPV4_ADDRESS:-192.168.1.2}"
+	NETWORK0_IPV4_NETMASK="${NETWORK0_IPV4_NETMASK:-255.255.255.0}"
+
+	if [ "${NETWORK0_IPV4_METHOD}" = "static" ] && [ -e /etc/resolv.conf ]
+	then
+		NAMESERVER_SERVER="${NAMESERVER_SERVER:-$(if [ -e /etc/resolv.conf ]; then awk '/^nameserver / {$1=""; print $0}' /etc/resolv.conf; fi)}"
+		# Workaround to get rid of newlines since debconf can not handle multiline return value in assignments
+		NAMESERVER_SERVER="$(echo ${NAMESERVER_SERVER})"
+
+		NAMESERVER_DOMAIN="${NAMESERVER_DOMAIN:-$(if [ -e /etc/resolv.conf ]; then awk '/^domain / {$1=""; print $0}' /etc/resolv.conf; fi)}"
+		NAMESERVER_SEARCH="${NAMESERVER_SEARCH:-$(if [ -e /etc/resolv.conf ]; then awk '/^search / {$1=""; print $0}' /etc/resolv.conf; fi)}"
+		NAMESERVER_OPTIONS="${NAMESERVER_OPTIONS:-$(if [ -e /etc/resolv.conf ]; then awk '/^options / {$1=""; print $0}' /etc/resolv.conf; fi)}"
+	fi
+}
+
+Network ()
+{
+	db_get cnt-debconf/network0/bridge
+	NETWORK0_BRIDGE="${RET}" # string (w/o empty)
+
+	db_get cnt-debconf/network0/ipv4-method
+	NETWORK0_IPV4_METHOD="${RET}" # select
+
+	db_get cnt-debconf/network0/ipv4-comment
+	NETWORK0_IPV4_COMMENT="${RET}" # string (w/ empty)
+
+	db_get cnt-debconf/network0/ipv4-address
+	NETWORK0_IPV4_ADDRESS="${RET}" # string (w/o empty)
+
+	db_get cnt-debconf/network0/ipv4-broadcast
+	NETWORK0_IPV4_BROADCAST="${RET}" # string (w/ empty)
+
+	db_get cnt-debconf/network0/ipv4-gateway
+	NETWORK0_IPV4_GATEWAY="${RET}" # string (w/ empty)
+
+	db_get cnt-debconf/network0/ipv4-netmask
+	NETWORK0_IPV4_NETMASK="${RET}" # string (w/o empty)
+
+	db_get cnt-debconf/network0/ipv4-network
+	NETWORK0_IPV4_NETWORK="${RET}" # string (w/ empty)
+
+	db_get cnt-debconf/network0/ipv4-post-up
+	NETWORK0_IPV4_POST_UP="${RET}" # string (w/ empty)
+
+	db_get cnt-debconf/network0/ipv4-post-down
+	NETWORK0_IPV4_POST_DOWN="${RET}" # string (w/ empty)
+
+	db_get cnt-debconf/nameserver/server
+	NAMESERVER_SERVER="${RET}" # string (w/ empty)
+
+	db_get cnt-debconf/nameserver/domain
+	NAMESERVER_DOMAIN="${RET}" # string (w/ empty)
+
+	db_get cnt-debconf/nameserver/search
+	NAMESERVER_SEARCH="${RET}" # string (w/ empty)
+
+	db_get cnt-debconf/nameserver/options
+	NAMESERVER_OPTIONS="${RET}" # string (w/ empty)
+
+	Network_defaults
+
+	db_set cnt-debconf/network0/bridge "${NETWORK0_BRIDGE}"
+	db_fset cnt-debconf/network0/bridge seen false
+
+	db_set cnt-debconf/network0/ipv4-method "${NETWORK0_IPV4_METHOD}"
+	db_fset cnt-debconf/network0/ipv4-method seen false
+
+	db_set cnt-debconf/network0/ipv4-comment "${NETWORK0_IPV4_COMMENT}"
+	db_fset cnt-debconf/network0/ipv4-comment seen false
+
+	db_set cnt-debconf/network0/ipv4-address "${NETWORK0_IPV4_ADDRESS}"
+	db_fset cnt-debconf/network0/ipv4-address seen false
+
+	db_set cnt-debconf/network0/ipv4-broadcast "${NETWORK0_IPV4_BROADCAST}"
+	db_fset cnt-debconf/network0/ipv4-broadcast seen false
+
+	db_set cnt-debconf/network0/ipv4-gateway "${NETWORK0_IPV4_GATEWAY}"
+	db_fset cnt-debconf/network0/ipv4-gateway seen false
+
+	db_set cnt-debconf/network0/ipv4-netmask "${NETWORK0_IPV4_NETMASK}"
+	db_fset cnt-debconf/network0/ipv4-netmask seen false
+
+	db_set cnt-debconf/network0/ipv4-network "${NETWORK0_IPV4_NETWORK}"
+	db_fset cnt-debconf/network0/ipv4-network seen false
+
+	db_set cnt-debconf/network0/ipv4-post-up "${NETWORK0_IPV4_POST_UP}"
+	db_fset cnt-debconf/network0/ipv4-post-up seen false
+
+	db_set cnt-debconf/network0/ipv4-post-down "${NETWORK0_IPV4_POST_DOWN}"
+	db_fset cnt-debconf/network0/ipv4-post-down seen false
+
+	db_set cnt-debconf/nameserver/server "${NAMESERVER_SERVER}"
+	db_fset cnt-debconf/nameserver/server seen false
+
+	db_set cnt-debconf/nameserver/domain "${NAMESERVER_DOMAIN}"
+	db_fset cnt-debconf/nameserver/domain seen false
+
+	db_set cnt-debconf/nameserver/search "${NAMESERVER_SEARCH}"
+	db_fset cnt-debconf/nameserver/search seen false
+
+	db_set cnt-debconf/nameserver/options "${NAMESERVER_OPTIONS}"
+	db_fset cnt-debconf/nameserver/options seen false
+
+	db_settitle cnt-debconf/title
+	db_input high cnt-debconf/network0/ipv4-method || true
+	db_go
+
+	db_get cnt-debconf/network0/bridge
+	NETWORK0_BRIDGE="${RET}" # select
+
+	db_get cnt-debconf/network0/ipv4-method
+	NETWORK0_IPV4_METHOD="${RET}" # select
+
+	case "${NETWORK0_IPV4_METHOD}" in
+		none|dhcp)
+			;;
+
+		static)
+			db_settitle cnt-debconf/title
+			db_input high cnt-debconf/network0/ipv4-comment || true
+			db_go
+
+			db_settitle cnt-debconf/title
+			db_input high cnt-debconf/network0/ipv4-address || true
+			db_go
+
+			db_settitle cnt-debconf/title
+			db_input high cnt-debconf/network0/ipv4-broadcast || true
+			db_go
+
+			db_settitle cnt-debconf/title
+			db_input high cnt-debconf/network0/ipv4-gateway || true
+			db_go
+
+			db_settitle cnt-debconf/title
+			db_input high cnt-debconf/network0/ipv4-netmask || true
+			db_go
+
+			db_settitle cnt-debconf/title
+			db_input high cnt-debconf/network0/ipv4-network || true
+			db_go
+
+			db_settitle cnt-debconf/title
+			db_input high cnt-debconf/network0/ipv4-post-up || true
+			db_go
+
+			db_settitle cnt-debconf/title
+			db_input high cnt-debconf/network0/ipv4-post-down || true
+			db_go
+
+			db_settitle cnt-debconf/title
+			db_input high cnt-debconf/nameserver/server || true
+			db_go
+			;;
+	esac
+
+	NUMBER="0"
+
+	while db_get cnt-debconf/network${NUMBER}/ipv4-method && [ "${RET}" ]
+	do
+		if db_get cnt-debconf/network${NUMBER}/bridge
+		then
+			eval NETWORK${NUMBER}_BRIDGE="\"${RET}\"" # string (w/o empty)
+		fi
+
+		if db_get cnt-debconf/network${NUMBER}/ipv4-comment
+		then
+			eval NETWORK${NUMBER}_IPV4_COMMENT="\"${RET}\"" # string (w/ empty)
+		fi
+
+		if db_get cnt-debconf/network${NUMBER}/ipv4-method
+		then
+			eval NETWORK${NUMBER}_IPV4_METHOD="\"${RET}\"" # select
+		fi
+
+		if db_get cnt-debconf/network${NUMBER}/ipv4-address
+		then
+			eval NETWORK${NUMBER}_IPV4_ADDRESS="\"${RET}\"" # string (w/o empty)
+		fi
+
+		if db_get cnt-debconf/network${NUMBER}/ipv4-broadcast
+		then
+			eval NETWORK${NUMBER}_IPV4_BROADCAST="\"${RET}\"" # string (w/ empty)
+		fi
+
+		if db_get cnt-debconf/network${NUMBER}/ipv4-gateway
+		then
+			eval NETWORK${NUMBER}_IPV4_GATEWAY="\"${RET}\"" # string (w/ empty)
+		fi
+
+		if db_get cnt-debconf/network${NUMBER}/ipv4-netmask
+		then
+			eval NETWORK${NUMBER}_IPV4_NETMASK="\"${RET}\"" # string (w/o empty)
+		fi
+
+		if db_get cnt-debconf/network${NUMBER}/ipv4-network
+		then
+			eval NETWORK${NUMBER}_IPV4_NETWORK="\"${RET}\"" # string (w/ empty)
+		fi
+
+		if db_get cnt-debconf/network${NUMBER}/ipv4-post-up
+		then
+			eval NETWORK${NUMBER}_IPV4_POST_UP="\"${RET}\"" # string (w/ empty)
+		fi
+
+		if db_get cnt-debconf/network${NUMBER}/ipv4-post-down
+		then
+			eval NETWORK${NUMBER}_IPV4_POST_DOWN="\"${RET}\"" # string (w/ empty)
+		fi
+
+		NUMBER="$((${NUMBER} + 1))"
+	done
+
+	NETWORK_NUMBER="${NUMBER}"
+
+	db_get cnt-debconf/nameserver/server
+	NAMESERVER_SERVER="${RET}" # string (w/ empty)
+
+	db_get cnt-debconf/nameserver/domain
+	NAMESERVER_DOMAIN="${RET}" # string (w/ empty)
+
+	db_get cnt-debconf/nameserver/search
+	NAMESERVER_SEARCH="${RET}" # string (w/ empty)
+
+	db_get cnt-debconf/nameserver/options
+	NAMESERVER_OPTIONS="${RET}" # string (w/ empty)
+
+	Network_defaults
+
+	echo "NETWORK_NUMBER=\"${NETWORK_NUMBER}\"" >> "${DEBCONF_TMPDIR}/debconf.default"
+
+	for NUMBER in $(seq 0 ${NETWORK_NUMBER})
+	do
+		eval BRIDGE="$`echo NETWORK${NUMBER}_BRIDGE`"
+		echo "NETWORK${NUMBER}_BRIDGE=\"${BRIDGE}\"" >> "${DEBCONF_TMPDIR}/debconf.default"
+
+		eval COMMENT="$`echo NETWORK${NUMBER}_IPV4_COMMENT`"
+		echo "NETWORK${NUMBER}_IPV4_COMMENT=\"${COMMENT}\"" >> "${DEBCONF_TMPDIR}/debconf.default"
+
+		eval METHOD="$`echo NETWORK${NUMBER}_IPV4_METHOD`"
+		echo "NETWORK${NUMBER}_IPV4_METHOD=\"${METHOD}\"" >> "${DEBCONF_TMPDIR}/debconf.default"
+
+		eval ADDRESS="$`echo NETWORK${NUMBER}_IPV4_ADDRESS`"
+		echo "NETWORK${NUMBER}_IPV4_ADDRESS=\"${ADDRESS}\"" >> "${DEBCONF_TMPDIR}/debconf.default"
+
+		eval BROADCAST="$`echo NETWORK${NUMBER}_IPV4_BROADCAST`"
+		echo "NETWORK${NUMBER}_IPV4_BROADCAST=\"${BROADCAST}\"" >> "${DEBCONF_TMPDIR}/debconf.default"
+
+		eval GATEWAY="$`echo NETWORK${NUMBER}_IPV4_GATEWAY`"
+		echo "NETWORK${NUMBER}_IPV4_GATEWAY=\"${GATEWAY}\"" >> "${DEBCONF_TMPDIR}/debconf.default"
+
+		eval NETMASK="$`echo NETWORK${NUMBER}_IPV4_NETMASK`"
+		echo "NETWORK${NUMBER}_IPV4_NETMASK=\"${NETMASK}\"" >> "${DEBCONF_TMPDIR}/debconf.default"
+
+		eval NETWORK="$`echo NETWORK${NUMBER}_IPV4_NETWORK`"
+		echo "NETWORK${NUMBER}_IPV4_NETWORK=\"${NETWORK}\"" >> "${DEBCONF_TMPDIR}/debconf.default"
+
+		eval POST_UP="$`echo NETWORK${NUMBER}_IPV4_POST_UP`"
+		echo "NETWORK${NUMBER}_IPV4_POST_UP=\"${POST_UP}\"" >> "${DEBCONF_TMPDIR}/debconf.default"
+
+		eval POST_DOWN="$`echo NETWORK${NUMBER}_IPV4_POST_DOWN`"
+		echo "NETWORK${NUMBER}_IPV4_POST_DOWN=\"${POST_DOWN}\"" >> "${DEBCONF_TMPDIR}/debconf.default"
+	done
+
+	echo "NAMESERVER_SERVER=\"${NAMESERVER_SERVER}\"" >> "${DEBCONF_TMPDIR}/debconf.default"
+	echo "NAMESERVER_DOMAIN=\"${NAMESERVER_DOMAIN}\"" >> "${DEBCONF_TMPDIR}/debconf.default"
+	echo "NAMESERVER_SEARCH=\"${NAMESERVER_SEARCH}\"" >> "${DEBCONF_TMPDIR}/debconf.default"
+	echo "NAMESERVER_OPTIONS=\"${NAMESERVER_OPTIONS}\"" >> "${DEBCONF_TMPDIR}/debconf.default"
+}
+
+Root_password ()
+{
+	if db_get cnt-debconf/root-password
+	then
+		ROOT_PASSWORD="${RET}" # string (w/o empty)
+	fi
+
+	if [ -z "${ROOT_PASSWORD}" ]
+	then
+		# Create a random password as suggestion for the user
+		RANDOM_PASSWORD="$(dd if=/dev/urandom bs=12 count=1 2> /dev/null | base64)"
+
+		db_set cnt-debconf/root-password ${RANDOM_PASSWORD}
+		db_fset cnt-debconf/root-password seen false
+
+		db_settitle cnt-debconf/title
+		db_input high cnt-debconf/root-password || true
+		db_go
+
+		db_get cnt-debconf/root-password
+		ROOT_PASSWORD="${RET}"
+
+		if [ -z "${ROOT_PASSWORD}" ]
+		then
+			# User did set not set a password, falling back to random password
+			ROOT_PASSWORD="${RANDOM_PASSWORD}"
+		fi
+
+		if [ "${ROOT_PASSWORD}" = "${RANDOM_PASSWORD}" ]
+		then
+			echo "ROOT_RANDOM_PASSWORD=\"true\"" >> "${DEBCONF_TMPDIR}/debconf.default"
+		fi
+	fi
+
+	echo "ROOT_PASSWORD=\"${ROOT_PASSWORD}\"" >> "${DEBCONF_TMPDIR}/debconf.default"
+}
+
+Internal_options ()
+{
+	if db_get cnt-debconf/apt-recommends
+	then
+		APT_RECOMMENDS="${RET}" # boolean (w/ empty)
+	fi
+
+	echo "APT_RECOMMENDS=\"${APT_RECOMMENDS}\"" >> "${DEBCONF_TMPDIR}/debconf.default"
+
+	if db_get cnt-debconf/debconf-frontend
+	then
+		DEBCONF_FRONTEND="${RET}" # select
+	fi
+
+	DEBCONF_FRONTEND="${DEBCONF_FRONTEND:-dialog}"
+	echo "DEBCONF_FRONTEND=\"${DEBCONF_FRONTEND}\"" >> "${DEBCONF_TMPDIR}/debconf.default"
+
+	if db_get cnt-debconf/debconf-priority
+	then
+		DEBCONF_PRIORITY="${RET}" # select
+	fi
+
+	DEBCONF_PRIORITY="${DEBCONF_PRIORITY:-high}"
+	echo "DEBCONF_PRIORITY=\"${DEBCONF_PRIORITY}\"" >> "${DEBCONF_TMPDIR}/debconf.default"
+
+	if db_get cnt-debconf/container-command
+	then
+		CONTAINER_COMMAND="${RET}" # string (w/ empty)
+	fi
+
+	echo "CONTAINER_COMMAND=\"${CONTAINER_COMMAND}\"" >> "${DEBCONF_TMPDIR}/debconf.default"
+
+	if db_get cnt-debconf/host-command
+	then
+		HOST_COMMAND="${RET}" # string (w/ empty)
+	fi
+
+	echo "HOST_COMMAND=\"${HOST_COMMAND}\"" >> "${DEBCONF_TMPDIR}/debconf.default"
+}
+
+Distribution
+Parent_distribution
+
+Architecture
+
+Archives
+Parent_archives
+
+Mirror
+Mirror_security
+
+Parent_mirror
+Parent_mirror_security
+
+Archive_areas
+Parent_archive_areas
+
+Packages
+Local_archives
+
+Network
+Root_password
+
+Internal_options
+
+db_stop
