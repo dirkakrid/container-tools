@@ -21,7 +21,23 @@ systemd-nspawn.
   * https://github.com/open-infrastructure/container-tools
 
 
-3. Usage
+3. Installation
+---------------
+
+3.1 Source
+----------
+
+  1. sudo apt instal asciidoc git docbook-xml docbook-xsl libxml2-utils make xsltproc
+  2. git clone https://github.com/open-infrastructure/container-tools
+  3. cd container-tools && sudo make install
+
+3.2 Debian 8 (stretch) and newer
+--------------------------------
+
+  * sudo apt install open-infrastructure-container-tools
+
+
+4. Usage
 --------
 
   * Create a new container:
@@ -52,7 +68,7 @@ systemd-nspawn.
     container version
 
 
-4. Links
+5. Links
 --------
 
   * 2016-02-24: Systemd vs. Docker
@@ -77,7 +93,7 @@ systemd-nspawn.
     https://lwn.net/Articles/531114/
 
 
-5. Authors
+6. Authors
 ----------
 
   * Daniel Baumann <daniel.baumann@open-infrastructure.net>
