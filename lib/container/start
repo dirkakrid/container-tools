@@ -90,12 +90,31 @@ esac
 HOST_ARCHITECTURE="$(dpkg --print-architecture)"
 MACHINE_ARCHITECTURE="$(chroot ${MACHINES}/${NAME} dpkg --print-architecture)"
 
-if [ "${HOST_ARCHITECTURE}" = "amd64" ] && [ "${MACHINE_ARCHITECTURE}" = "i386" ]
-then
-	SETARCH="setarch i686"
-else
-	SETARCH=""
-fi
+case "${HOST_ARCHITECTURE}" in
+	amd64)
+		case "${MACHINE_ARCHITECTURE}" in
+			i386)
+				SETARCH="setarch i686"
+				;;
+
+			*)
+				SETARCH=""
+				;;
+		esac
+		;;
+
+	arm64)
+		case "${MACHINE_ARCHITECTURE}" in
+			armel|armhf)
+				SETARCH="setarch armv7l"
+				;;
+
+			*)
+				SETARCH=""
+				;;
+		esac
+		;;
+esac
 
 # config
 if [ -e "${CONFIG}/${NAME}.conf" ]
