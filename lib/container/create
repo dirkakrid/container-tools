@@ -1,0 +1,125 @@
+#!/bin/sh
+
+# Open Infrastructure: container-tools
+# Copyright (C) 2014-2015 Daniel Baumann <daniel.baumann@open-infrastructure.net>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+set -e
+
+COMMAND="$(basename ${0})"
+
+CONFIG="/etc/container-tools/config"
+MACHINES="/var/lib/machines"
+
+Parameters ()
+{
+	LONG_OPTIONS="name:,bind:,script:"
+	OPTIONS="n:,b:,s:"
+
+	PARAMETERS="$(getopt --longoptions ${LONG_OPTIONS} --name=${COMMAND} --options ${OPTIONS} --shell sh -- ${@})"
+
+	if [ "${?}" != "0" ]
+	then
+		echo "'${COMMAND}': getopt exit" >&2
+		exit 1
+	fi
+
+	eval set -- "${PARAMETERS}"
+
+	while true
+	do
+		case "${1}" in
+			-n|--name)
+				NAME="${2}"
+				shift 2
+				;;
+
+			-b|--bind)
+				BIND="${2}"
+				shift 2
+				;;
+
+			-s|--script)
+				SCRIPT="${2}"
+				shift 2
+				;;
+
+			--)
+				shift 1
+				break
+				;;
+
+			*)
+				echo "'${COMMAND}': getopt error" >&2
+				exit 1
+				;;
+		esac
+	done
+}
+
+Usage ()
+{
+	echo "Usage: container ${COMMAND} -n|--name NAME [-b|--bind DIRECTORY:DIRECTORY[:OPTIONS]] [-s|--script SCRIPT] [-- SCRIPT_OPTIONS]" >&2
+	exit 1
+}
+
+Parameters "${@}"
+
+if [ -z "${NAME}" ]
+then
+	Usage
+fi
+
+if [ -e "${CONFIG}/${NAME}.conf" ]
+then
+	echo "'${NAME}': container already exists or ${CONFIG}/${NAME}.conf has not been removed" >&2
+	exit 1
+fi
+
+SCRIPT="${SCRIPT:-debootstrap}"
+
+if [ ! -e "/usr/share/container-tools/scripts/${SCRIPT}" ]
+then
+	echo "'${SCRIPT}': no such script" >&2
+fi
+
+BINDS="$(echo ${BIND} | sed -e 's|;| |g')"
+
+for ENTRY in ${BINDS}
+do
+	DIRECTORY="$(echo ${ENTRY} | awk -F: '{ print $1 }')"
+
+	if [ ! -e "${DIRECTORY}" ]
+	then
+		mkdir -p "${DIRECTORY}"
+	fi
+done
+
+# config
+mkdir -p "${CONFIG}"
+
+sed	-e "s|@NAME@|${NAME}|g" \
+	-e "s|@BIND@|${BIND}|g" \
+	-e "s|@BOOT@|yes|g" \
+	-e "s|@DIRECTORY@|${MACHINES}/${NAME}|g" \
+	-e "s|@MACHINE@|${NAME}|g" \
+	-e "s|@NETWORK_VETH@|yes|g" \
+	-e "s|@NETWORK_BRIDGE@|br0|g" \
+	-e "s|@LINK_JOURNAL@|no|g" \
+	-e "s|@REGISTER@|yes|g" \
+/usr/share/container-tools/config/container.conf.in > "${CONFIG}/${NAME}.conf"
+
+# Run
+"/usr/share/container-tools/scripts/${SCRIPT}" $(echo "${@}" | sed -e 's| -- | |')

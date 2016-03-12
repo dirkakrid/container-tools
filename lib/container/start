@@ -1,0 +1,195 @@
+#!/bin/sh
+
+# Open Infrastructure: container-tools
+# Copyright (C) 2014-2015 Daniel Baumann <daniel.baumann@open-infrastructure.net>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+set -e
+
+COMMAND="$(basename ${0})"
+
+CONFIG="/etc/container-tools/config"
+MACHINES="/var/lib/machines"
+
+Parameters ()
+{
+	LONG_OPTIONS="name:"
+	OPTIONS="n:"
+
+	PARAMETERS="$(getopt --longoptions ${LONG_OPTIONS} --name=${COMMAND} --options ${OPTIONS} --shell sh -- ${@})"
+
+	if [ "${?}" != "0" ]
+	then
+		echo "'${COMMAND}': getopt exit" >&2
+		exit 1
+	fi
+
+	eval set -- "${PARAMETERS}"
+
+	while true
+	do
+		case "${1}" in
+			-n|--name)
+				NAME="${2}"
+				shift 2
+				;;
+
+			--)
+				shift 1
+				break
+				;;
+
+			*)
+				echo "'${COMMAND}': getopt error" >&2
+				exit 1
+				;;
+		esac
+	done
+}
+
+Usage ()
+{
+	echo "Usage: container ${COMMAND} -n|--name NAME" >&2
+	exit 1
+}
+
+Parameters "${@}"
+
+if [ -z "${NAME}" ]
+then
+	Usage
+fi
+
+if [ ! -e "${MACHINES}/${NAME}" ]
+then
+	echo "'${NAME}': no such container" >&2
+	exit 1
+fi
+
+STATE="$(machinectl show ${NAME} 2>&1 | awk -F= '/^State=/ { print $2 }')"
+
+case "${STATE}" in
+	running)
+		echo "'${NAME}': container is already started" >&2
+		exit 1
+		;;
+esac
+
+HOST_ARCHITECTURE="$(dpkg --print-architecture)"
+MACHINE_ARCHITECTURE="$(chroot ${MACHINES}/${NAME} dpkg --print-architecture)"
+
+if [ "${HOST_ARCHITECTURE}" = "amd64" ] && [ "${MACHINE_ARCHITECTURE}" = "i386" ]
+then
+	SETARCH="setarch i686"
+else
+	SETARCH=""
+fi
+
+# config
+if [ -e "${CONFIG}/${NAME}.conf" ]
+then
+	BIND="$(awk -F= '/^bind=/ { print $2 }' ${CONFIG}/${NAME}.conf)"
+
+	if [ -n "${BIND}" ]
+	then
+		BINDS="$(echo ${BIND} | sed -e 's|;| |g')"
+
+		for BIND in ${BINDS}
+		do
+			DIRECTORY="$(echo ${BIND} | awk -F: '{ print $1 }')"
+
+			if [ ! -e "${DIRECTORY}" ]
+			then
+				echo "E: '${DIRECTORY}' - no such directory." >&2
+				exit 1
+			fi
+		done
+
+		BIND=""
+
+		for DIRECTORIES in ${BINDS}
+		do
+			BIND="${BIND} --bind ${DIRECTORIES}"
+		done
+	fi
+
+	BOOT="$(awk -F= '/^boot=/ { print $2 }' ${CONFIG}/${NAME}.conf || echo yes)"
+
+	case "${BOOT}" in
+		yes)
+			BOOT="--boot"
+			;;
+
+		*)
+			BOOT=""
+			;;
+	esac
+
+	DIRECTORY="$(awk -F= '/^directory=/ { print $2 }' ${CONFIG}/${NAME}.conf || echo ${MACHINES}/${NAMES})"
+	DIRECTORY="--directory ${DIRECTORY}"
+
+	MACHINE="--machine=${NAME}"
+
+	NETWORK_BRIDGE="$(awk -F= '/^network-bridge=/ { print $2 }' ${CONFIG}/${NAME}.conf)"
+
+	case "${NETWORK_BRIDGE}" in
+		"")
+			NETWORK_BRIDGE=""
+			;;
+
+		*)
+			NETWORK_BRIDGE="--network-bridge=${NETWORK_BRIDGE}"
+			;;
+	esac
+
+	NETWORK_VETH="$(awk -F= '/^network-veth=/ { print $2 }' ${CONFIG}/${NAME}.conf || echo yes)"
+
+	case "${NETWORK_VETH}" in
+		yes)
+			NETWORK_VETH="--network-veth"
+			;;
+
+		*)
+			NETWORK_VETH=""
+			;;
+	esac
+
+	LINK_JOURNAL="$(awk -F= '/^link-journal=/ { print $2 }' ${CONFIG}/${NAME}.conf || echo no)"
+
+	case "${LINK_JOURNAL}" in
+		yes)
+			LINK_JOURNAL="--link-journal=yes"
+			;;
+
+		*)
+			LINK_JOURNAL="--link-journal=no"
+			;;
+	esac
+
+	REGISTER="$(awk -F= '/^register=/ { print $2 }' ${CONFIG}/${NAME}.conf || echo yes)"
+
+	case "${REGISTER}" in
+		yes)
+			REGISTER="--register=yes"
+			;;
+
+		*)
+			REGISTER="--register=no"
+			;;
+	esac
+fi
+
+# Run
+${SETARCH} systemd-nspawn ${BIND} ${BOOT} ${DIRECTORY} ${MACHINE} ${NETWORK_BRIDGE} ${NETWORK_VETH} ${LINK_JOURNAL} ${REGISTER}

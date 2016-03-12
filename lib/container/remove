@@ -1,0 +1,129 @@
+#!/bin/sh
+
+# Open Infrastructure: container-tools
+# Copyright (C) 2014-2015 Daniel Baumann <daniel.baumann@open-infrastructure.net>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+set -e
+
+COMMAND="$(basename ${0})"
+
+CONFIG="/etc/container-tools/config"
+MACHINES="/var/lib/machines"
+
+Parameters ()
+{
+	LONG_OPTIONS="name:,force"
+	OPTIONS="n:,f"
+
+	PARAMETERS="$(getopt --longoptions ${LONG_OPTIONS} --name=${COMMAND} --options ${OPTIONS} --shell sh -- ${@})"
+
+	if [ "${?}" != "0" ]
+	then
+		echo "'${COMMAND}': getopt exit" >&2
+		exit 1
+	fi
+
+	eval set -- "${PARAMETERS}"
+
+	while true
+	do
+		case "${1}" in
+			-n|--name)
+				NAME="${2}"
+				shift 2
+				;;
+
+			-f|--force)
+				FORCE="true"
+				shift 1
+				;;
+
+			--)
+				shift 1
+				break
+				;;
+
+			*)
+				echo "'${COMMAND}': getopt error" >&2
+				exit 1
+				;;
+		esac
+	done
+}
+
+Usage ()
+{
+	echo "Usage: container ${COMMAND} -n|--name NAME [-f|--force]" >&2
+	exit 1
+}
+
+Parameters "${@}"
+
+if [ -z "${NAME}" ]
+then
+	Usage
+fi
+
+if [ ! -e "${MACHINES}/${NAME}" ]
+then
+	echo "'${NAME}': no such container" >&2
+	exit 1
+fi
+
+STATE="$(machinectl show ${NAME} 2>&1 | awk -F= '/^State=/ { print $2 }')"
+
+case "${STATE}" in
+	running)
+		echo "'${NAME}': container is started" >&2
+		exit 1
+		;;
+esac
+
+case "${FORCE}" in
+	true)
+		;;
+
+	*)
+		echo -n "'${NAME}': remove container '${NAME}'? "
+		read FORCE
+
+		case "${FORCE}" in
+			y|Y)
+				;;
+
+			*)
+				exit 1
+				;;
+		esac
+		;;
+esac
+
+# data
+if [ -e "${CONFIG}/${NAME}.conf" ]
+then
+	BIND="$(awk -F= '/^bind=/ { print $2 }' ${CONFIG}/${NAME}.conf)"
+
+	DIRECTORY="$(echo ${BIND} | awk -F: '{ print $1 }')"
+
+	if [ -e "${DIRECTORY}" ]
+	then
+		rmdir --ignore-fail-on-non-empty --parents ${DIRECTORY} || true
+	fi
+fi
+
+# Run
+rm -rf "${MACHINES}/${NAME}"
+rm -f "${CONFIG}/${NAME}.conf"
