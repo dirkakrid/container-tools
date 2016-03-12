@@ -156,8 +156,32 @@ then
 			;;
 	esac
 
+	CAPABILITY="$(awk -F= '/^capability=/ { print $2 }' ${CONFIG}/${NAME}.conf)"
+
+	case "${CAPABILITY}" in
+		"")
+			CAPABILITY=""
+			;;
+
+		*)
+			CAPABILITY="--capability=${CAPABILITY}"
+			;;
+	esac
+
 	DIRECTORY="$(awk -F= '/^directory=/ { print $2 }' ${CONFIG}/${NAME}.conf || echo ${MACHINES}/${NAMES})"
 	DIRECTORY="--directory ${DIRECTORY}"
+
+	DROP_CAPABILITY="$(awk -F= '/^drop-capability=/ { print $2 }' ${CONFIG}/${NAME}.conf)"
+
+	case "${DROP_CAPABILITY}" in
+		"")
+			DROP_CAPABILITY=""
+			;;
+
+		*)
+			DROP_CAPABILITY="--drop-capability=${DROP_CAPABILITY}"
+			;;
+	esac
 
 	MACHINE="--machine=${NAME}"
 
@@ -211,4 +235,4 @@ then
 fi
 
 # Run
-${SETARCH} systemd-nspawn ${BIND} ${BOOT} ${DIRECTORY} ${MACHINE} ${NETWORK_BRIDGE} ${NETWORK_VETH} ${LINK_JOURNAL} ${REGISTER}
+${SETARCH} systemd-nspawn ${BIND} ${BOOT} ${CAPABILITY} ${DIRECTORY} ${DROP_CAPABILITY} ${MACHINE} ${NETWORK_BRIDGE} ${NETWORK_VETH} ${LINK_JOURNAL} ${REGISTER}

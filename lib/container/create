@@ -25,7 +25,7 @@ MACHINES="/var/lib/machines"
 
 Parameters ()
 {
-	LONG_OPTIONS="name:,cnt.autostart:,bind:,script:"
+	LONG_OPTIONS="name:,cnt.autostart:,bind:,capability:,drop-capability:script:"
 	OPTIONS="n:,b:,c:,d:,s:"
 
 	PARAMETERS="$(getopt --longoptions ${LONG_OPTIONS} --name=${COMMAND} --options ${OPTIONS} --shell sh -- ${@})"
@@ -56,6 +56,16 @@ Parameters ()
 				shift 2
 				;;
 
+			-c|--capability)
+				CAPABILITY="${2}"
+				shift 2
+				;;
+
+			-d|--drop-capability)
+				DROP_CAPABILITY="${2}"
+				shift 2
+				;;
+
 			-s|--script)
 				SCRIPT="${2}"
 				shift 2
@@ -76,7 +86,7 @@ Parameters ()
 
 Usage ()
 {
-	echo "Usage: container ${COMMAND} -n|--name NAME [--cnt.autostart=true|false|FQDN] [-b|--bind DIRECTORY:DIRECTORY[:OPTIONS]] [-s|--script SCRIPT] [-- SCRIPT_OPTIONS]" >&2
+	echo "Usage: container ${COMMAND} -n|--name NAME [--cnt.autostart=true|false|FQDN] [-b|--bind DIRECTORY:DIRECTORY[:OPTIONS]] [-c|--capability CAPABILITY[,CAPABILITY]] [-d|--drop-capability DROP_CAPABILITY[,DROP_CAPABILITY]] [-s|--script SCRIPT] [-- SCRIPT_OPTIONS]" >&2
 	exit 1
 }
 
@@ -121,7 +131,9 @@ sed	-e "s|@CNT_AUTOSTART@|${CNT_AUTOSTART}|g" \
 	-e "s|@NAME@|${NAME}|g" \
 	-e "s|@BIND@|${BIND}|g" \
 	-e "s|@BOOT@|yes|g" \
+	-e "s|@CAPABILITY@|${CAPABILITY}|g" \
 	-e "s|@DIRECTORY@|${MACHINES}/${NAME}|g" \
+	-e "s|@DROP_CAPABILITY@|${DROP_CAPABILITY}|g" \
 	-e "s|@MACHINE@|${NAME}|g" \
 	-e "s|@NETWORK_VETH@|yes|g" \
 	-e "s|@NETWORK_BRIDGE@|br0|g" \

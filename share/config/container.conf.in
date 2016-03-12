@@ -4,7 +4,9 @@
 cnt.autostart=@CNT_AUTOSTART@
 bind=@BIND@
 boot=@BOOT@
+capability=@CAPABILITY@
 directory=@DIRECTORY@
+drop-capability=@DROP_CAPABILITY@
 machine=@MACHINE@
 network-veth=@NETWORK_VETH@
 network-bridge=@NETWORK_BRIDGE@

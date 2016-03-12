@@ -44,6 +44,12 @@ The following container-create options are available:
 *-n, --name='NAME'*::
 	Specify container name.
 
+*-c, --capability='CAPABILITY'*::
+	Specify capabilities to grant, see capabilities(7).
+
+*-d, --drop-capability='DROP_CAPABILITY'*::
+	Specify capabilities to drop, see capabilities(7).
+
 *-s, --script='SCRIPT'*::
 	Specify container creation script, defaults to debootstrap.
 
