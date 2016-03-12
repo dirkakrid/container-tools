@@ -1,0 +1,86 @@
+// Open Infrastructure: container-tools
+// Copyright (C) 2014-2016 Daniel Baumann <daniel.baumann@open-infrastructure.net>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+CONTAINER-CREATE(1)
+===================
+:doctype: manpage
+:man manual: Open Infrastructure
+:man source: container-tools
+:man version: {revnumber}
+
+
+NAME
+----
+container-create - Create a container
+
+
+SYNOPSIS
+--------
+*container create* ['OPTIONS']
+
+
+DESCRIPTION
+-----------
+The container-create command creates a container based on a script.
+
+
+OPTIONS
+-------
+The following container-create options are available:
+
+*-n, --name='NAME'*::
+	Specify container name.
+
+*-s, --script='SCRIPT'*::
+	Specify container creation script, defaults to debootstrap.
+
+*-b, --bind='DIRECTORY:DIRECTORY[:OPTIONS][;DIRECTORY:DIRECTORY[:OPTIONS]]'*::
+	Specify container bind mounts, see systemd-nspawn(1) --bind option.
+
+
+SCRIPTS
+-------
+The following container scripts are available:
+
+*debootstrap*::
+	Basic script to create Debian container, see container-create-debootstrap(1).
+
+
+EXAMPLES
+--------
+*Create example.net container using debootstrap script:*::
+	sudo container create -n example.net -s debootstrap
+
+
+SEE ALSO
+--------
+container-tools(7),
+container(1).
+
+
+HOMEPAGE
+--------
+More information about container-tools and the Open Infrastructure project can be found on the homepage at http://open-infrastructure.net.
+
+
+BUGS
+----
+Bugs can be reported by opening an issue in the GitHub repository at http://github.com/open-infrastructure/container-tools.
+
+
+AUTHORS
+-------
+container-tools was written by Daniel Baumann <daniel.baumann@open-infrastructure.net>.

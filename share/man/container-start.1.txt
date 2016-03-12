@@ -1,0 +1,72 @@
+// Open Infrastructure: container-tools
+// Copyright (C) 2014-2016 Daniel Baumann <daniel.baumann@open-infrastructure.net>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+CONTAINER-START(1)
+==================
+:doctype: manpage
+:man manual: Open Infrastructure
+:man source: container-tools
+:man version: {revnumber}
+
+
+NAME
+----
+container-start - Start a container
+
+
+SYNOPSIS
+--------
+*container start* ['OPTIONS']
+
+
+DESCRIPTION
+-----------
+The container start command starts a container.
+
+
+OPTIONS
+-------
+The following container options are available:
+
+*-n, --name='NAME'*::
+	Specify container name.
+
+
+EXAMPLES
+--------
+*Start example.net container:*::
+	sudo container start -n example.net
+
+
+SEE ALSO
+--------
+container-tools(7),
+container(1).
+
+
+HOMEPAGE
+--------
+More information about container-tools and the Open Infrastructure project can be found on the homepage at http://open-infrastructure.net.
+
+
+BUGS
+----
+Bugs can be reported by opening an issue in the GitHub repository at http://github.com/open-infrastructure/container-tools.
+
+
+AUTHORS
+-------
+container-tools was written by Daniel Baumann <daniel.baumann@open-infrastructure.net>.

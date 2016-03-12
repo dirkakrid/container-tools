@@ -1,0 +1,93 @@
+// Open Infrastructure: container-tools
+// Copyright (C) 2014-2016 Daniel Baumann <daniel.baumann@open-infrastructure.net>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+CONTAINER-CREATE-DEBOOTSTRAP(1)
+===============================
+:doctype: manpage
+:man manual: Open Infrastructure
+:man source: container-tools
+:man version: {revnumber}
+
+
+NAME
+----
+container-create-debootstrap - Create a Debian container with debootstrap
+
+
+SYNOPSIS
+--------
+*container create -s debootstrap* ['OPTIONS']
+
+
+DESCRIPTION
+-----------
+The debootstrap container creation script uses debootstrap(8) to create a Debian container.
+
+This script creates a pure Debian system with three modificiations:
+
+  * apt cache of packages downloaded during debootstrap is cleaned
+  * hostname is set (container name) in /etc/hostname
+  * root password is set (user specified or 16 random characters)
+
+
+OPTIONS
+-------
+The following script options are available:
+
+*-n, --name='NAME'*::
+	Specify container name.
+
+*-a, --architecture='ARCHITECTURE'*::
+	Specify the Debian architecture, defaults to the host systems architecture.
+
+*-d, --distribution='DISTRIBUTION'*::
+	Specify the Debian distribution, defaults to jessie.
+
+*-m, --mirror='MIRROR'*::
+	Specify the Debian mirror, defaults to http://ftp.debian.org/debian.
+
+*-p, --root-password='PASSWORD'*::
+	Specify the root password, defaults to a random 16 character password.
+
+
+EXAMPLES
+--------
+*Create a Debian 8 (jessie) container with same architecture as the host system:*::
+	sudo container create -s debootstrap -n jessie.example.net
+
+*Create a Debian 8 (jessie) with different architecture as the host system:*::
+	sudo container create -s debootstrap -n jessie-i386.example.net -- -a i386
+
+
+SEE ALSO
+--------
+container-tools(7),
+container(1).
+
+
+HOMEPAGE
+--------
+More information about container-tools and the Open Infrastructure project can be found on the homepage at http://open-infrastructure.net.
+
+
+BUGS
+----
+Bugs can be reported by opening an issue in the GitHub repository at http://github.com/open-infrastructure/container-tools.
+
+
+AUTHORS
+-------
+container-tools was written by Daniel Baumann <daniel.baumann@open-infrastructure.net>.
