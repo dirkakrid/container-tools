@@ -1,0 +1,118 @@
+container-tools: TODO
+=====================
+
+adding known bug section to container console manpage that root login doesn't work (securetty) out-of-the-box
+
+add mac-override for a container veth
+add DeviceAllow thingies as well as a hotplug add command for devices,
+use https://github.com/coreos/rkt/issues/873 as inspiration
+https://www.insecure.ws/linux/systemd_nspawn.html
+
+use *.cfg only for preseed files.
+
+add crudini
+add default symlink for container-create script or something, so that -s $script is not needed
+
+use CONFIG_DIRECTORY to point to either $container.conf or /etc/container-tools/config
+
+add lock in script to upgrade cache only when noone else is upgrading it.
+
+add release/roadmap notes to readme.txt
+
+container-list: add --active etc. options
+add --save flag to container limits command to write 'new' limits into config automatically
+add --upgrade flag to container config command to automitcally upgrade config to new formats
+add autostart in preseed file
+
+add support for multi-nics
+add custom hooks: /etc/container-tools/commands/start.d to be executed before start
+
+add description about scope of container-tools (small setups where openstack is over the top) in connection with cockpit-project
+
+
+cntsh: add --enable-commands COMMAND/--disable-commands COMMAND
+
+
+  * add automatic network configuration on host system for bridge (debconf).
+  * add command for ressource simple limiting
+  * add support for unprivileged containers
+
+  * fix issue where you cannot detach a container started in the foreground
+  * fix and complete bash completion
+
+  * make shell be able to be used as an interpreter for scripts
+
+
+
+* Run commands in a container:
+  sudo container run -n NAME [COMMANDS]
+
+
+manpage:
+ - add config manpage
+
+commands:
+ - add get/set program for config
+ - add image download
+
+programs:
+ - finish container-autostart, put it somewhere else in fs, make it also stop containers on shutdown
+
+Recommends:
+ bridge-utils,
+ debian-keyring,
+ gpgv,
+ procps,
+Suggests:
+ irker,
+ rsync,
+
+cnt-start:
+  * add a oem-config hook function.
+
+integration:
+  * criu: e.g. cnt save/restore or something
+  * openstack
+  * cockpit
+  * libvirt
+
+https://github.com/linuxfoundation/cii-best-practices-badge/blob/master/doc/criteria.md
+
+random:
+  * re-add caching possibility with pre-shipped tarballs
+  * integrate example debian packages that contain /usr/share/container-tools/cache/*
+  * add debconf question to ask for level of mac conflict check
+  * add cnt 'control' user with sudo magics so that unprivileged users can
+    start/stop/restart/create/destroy their containers; maybe group so that anyone in group can do it
+  * add bash-completion
+  * don't hardcode /var/lib/machines
+  * do something about the automatic bridge+dhcpd+resolver-setup use-case
+
+cnt-debconf:
+  * include removal of backup files and such from system-build:share/hooks/*
+  * make /usr/share/container-tools/includes/{$name,all} or somesuch for local includes (e.g. certs)
+  * for some reason the Internal_options don't make it to debconf.default;
+    probably because the 'if db_get ...' constructs don't work with set -e.
+  * allow mechanism to store local packages that overwrite repository ones
+  * if invoked as cnt-debconf, ask for mode (debian, progress-linux, etc.)
+  * allow to have templates (that do not get modified) in /etc/cnt/debconf
+  * write preseed file into /etc/cnt/debconf after cnt-debconf is done
+  * create /etc/cnt/{debian,progress} and respect it depending on mode
+  * save last used IP, use this +1 as default for next container
+  * check for already used IPs and give a warning if a container with
+    same ip already exists on the system.
+  * add manpage
+  * handle mac (arp; local; etc.)
+  * guess bridge device
+  * get rid of /bin/bash
+  * don't embedd cnt config, use a template from etc
+  * check if the 'no network' use case is handled properly in cnt-debconf
+    should not add network entries in the container config file.
+  * support /etc/cnt/debconf/$FQDN.d/*.cfg as valid preseeds
+  * if exit with error, do unmount pseudo-fs (use a trap, rather than rely on flock/set +x)
+  * use /etc/cnt/default.conf as an include from $container/config
+  * add something like --no-delete to not delete cache/containers when
+    creation failed (in order to be able to debug later on)
+  * check that preseed hiearchy is correct:
+    - main preseed voerwrites includes
+    - first include is overwritting by second include
