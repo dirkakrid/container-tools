@@ -1,0 +1,11 @@
+# container-tools: @NAME@
+
+[start]
+bind=@BIND@
+boot=@BOOT@
+directory=@DIRECTORY@
+machine=@MACHINE@
+network-veth=@NETWORK_VETH@
+network-bridge=@NETWORK_BRIDGE@
+link-journal=@LINK_JOURNAL@
+register=@REGISTER@
