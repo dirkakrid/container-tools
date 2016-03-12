@@ -74,6 +74,7 @@ install: build
 	done
 
 	ln -s container.1 $(DESTDIR)/usr/share/man/man1/cnt.1
+	ln -s container-shell.1 $(DESTDIR)/usr/share/man/man1/cntsh.1
 
 uninstall:
 	for SECTION in $$(seq 1 8); \
@@ -89,6 +90,7 @@ uninstall:
 	done
 
 	rm -f $(DESTDIR)/usr/share/man/man1/cnt.1
+	rm -f $(DESTDIR)/usr/share/man/man1/cntsh.1
 
 	rm -rf $(DESTDIR)/usr/share/$(SOFTWARE)
 	rmdir --ignore-fail-on-non-empty --parents $(DESTDIR)/usr/share || true

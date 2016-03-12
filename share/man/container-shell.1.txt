@@ -24,12 +24,12 @@ CONTAINER(1)
 
 NAME
 ----
-container - Manage systemd-nspawn Containers
+container-shell - Manage systemd-nspawn Containers (shell)
 
 
 SYNOPSIS
 --------
-*container* 'COMMAND' ['OPTIONS']
+*container-shell*
 
 
 DESCRIPTION
@@ -37,64 +37,9 @@ DESCRIPTION
 container-tools provides the integration for Debian based Containers using systemd-nspawn.
 
 
-OPTIONS
--------
-The following container common options are available:
-
-*-n, --name='NAME'*::
-	Specify container name.
-
-
 COMMANDS
 --------
-The following container commands are available:
-
-*create*::
-	Create a new container, see container-create(1).
-
-*start*::
-	Start a container, see container-start(1).
-
-*restart*::
-	Restart a container, see container-restart(1).
-
-*stop*::
-	Stop a container, see container-stop(1).
-
-*remove*::
-	Remove a container, see container-remove(1).
-
-*console*::
-	Attach console to a container, see container-console(1).
-
-*list*::
-	List container on the system, see container-list(1).
-
-*version*::
-	Show container-tools version, see container-version(1).
-
-
-FILES
------
-The following files are used:
-
-*/usr/bin/container*, */usr/bin/cnt*::
-	Container program.
-
-*/usr/bin/container-shell*, */usr/bin/cntsh*::
-	Container shell program.
-
-*/usr/lib/container-tools*::
-	Container commands.
-
-*/usr/share/container-tools*::
-	Container shared data.
-
-*/usr/share/doc/container-tools*::
-	Container documentation files.
-
-*/var/lib/machines*::
-	Container root directory.
+All container commands are available, see container(1).
 
 
 SEE ALSO
