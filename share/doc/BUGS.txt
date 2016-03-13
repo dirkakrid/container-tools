@@ -1,0 +1,37 @@
+container-tools: Bugs
+=====================
+
+
+1. veth not removed on container stop
+-------------------------------------
+
+When stopping a container, it irregularly but reproducibly happen that the
+corresponding veth device of the container is not shutdown, making it
+impossible to start the container again.
+
+This is caused by a kernel bug not cleaning up veth devices on container
+collapsing. The veth device is supposed to be go away automatically after
+some time, definitely after a reboot though.
+
+A manual workaround is to shutdown the veth device manually with:
+
+# ip link delete ${VETH_DEVICE}
+
+There is a patch for it, see for more information:
+http://lists.linuxfoundation.org/pipermail/containers/2012-October/030533.html
+
+FIXME: add nspan message about it here
+
+2. bug with machine.slices etc
+------------------------------
+
+FIXME
+
+3. veth length
+--------------
+
+systemd creates veth devices on the fly and names them vb-$NAME, where NAME is the
+container name truncated to the first 10 characters.
+
+Problem: if you have several containers named with the first 10 characters to be
+identical, systemd will not be able to create a new veth device.
