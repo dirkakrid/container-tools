@@ -67,6 +67,9 @@ The following container commands are available:
 *console*::
 	Attach console to a container, see container-console(1).
 
+*limit*::
+	Limit ressources of a container, see container-limit(1).
+
 *list*::
 	List container on the system, see container-list(1).
 

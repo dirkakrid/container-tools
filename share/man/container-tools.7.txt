@@ -62,6 +62,9 @@ USAGE
 *Attach console to a container:*::
 	sudo container console -n NAME
 
+*limit*::
+	sudo container limit -n NAME --cpu-quota 10%
+
 *List container on the system:*::
 	sudo container list
 

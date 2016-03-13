@@ -1,0 +1,105 @@
+// Open Infrastructure: container-tools
+// Copyright (C) 2014-2016 Daniel Baumann <daniel.baumann@open-infrastructure.net>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+CONTAINER-STOP(1)
+=================
+:doctype: manpage
+:man manual: Open Infrastructure
+:man source: container-tools
+:man version: {revnumber}
+
+
+NAME
+----
+container-stop - Limit ressources of a container
+
+
+SYNOPSIS
+--------
+*container limit* ['OPTIONS']
+
+
+DESCRIPTION
+-----------
+The container limit command limits ressources available to a container at runtime.
+
+
+OPTIONS
+-------
+The following container options are available:
+
+*-n, --name='NAME'*::
+	Specify container name.
+
+*--blockio-device-weight='DEVICE WEIGHT'*::
+	Specify device specific blockio weight, see systemd.resource-control(5).
+
+*--blockio-read-bandwith='DEVICE BYTES'*::
+	Specify device specific blockio read bandwith, see systemd.resource-control(5).
+
+*-b, --blockio-weight='WEIGHT'*::
+	Specify general blockio weight, see systemd.resource-control(5).
+
+*--blockio-write-bandwith='DEVICE BYTES'*::
+	Specify device specific blockio write bandwith, see systemd.resource-control(5).
+
+*-c, --cpu-quota='QUOTA'*::
+	Specify CPU quota, see systemd.resource-control(5).
+
+*--cpu-shares='SHARES'*::
+	Specify CPU shares, see systemd.resource-control(5).
+
+*-m, --memory-limit='BYTES'*::
+	Specify memory limit, see systemd.resource-control(5).
+
+*-t, --tasks-max='NUMBER'*::
+	Specify tasks max, see systemd.resource-control(5).
+
+
+EXAMPLES
+--------
+*Set blockio weight for the example.net container:*::
+	sudo container limit -n example.net --blockio-weight 100
+
+*Set CPU quota for the example.net container:*::
+	sudo container limit -n example.net --cpu-quota 10%
+
+*Set memory limit for the example.net container to 1GB:*::
+	sudo container limit -n example.net --memory-limit 1G
+
+*Set tasks max for the example.net container to 100:*::
+	sudo container limit -n example.net --tasks-max 100
+
+
+SEE ALSO
+--------
+container-tools(7),
+container(1).
+
+
+HOMEPAGE
+--------
+More information about container-tools and the Open Infrastructure project can be found on the homepage at http://open-infrastructure.net.
+
+
+BUGS
+----
+Bugs can be reported by opening an issue in the GitHub repository at http://github.com/open-infrastructure/container-tools.
+
+
+AUTHORS
+-------
+container-tools was written by Daniel Baumann <daniel.baumann@open-infrastructure.net>.

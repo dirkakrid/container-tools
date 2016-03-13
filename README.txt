@@ -42,6 +42,9 @@ systemd-nspawn.
   * Attach console to a container:
     sudo container console -n NAME
 
+  * Limit ressources of a container:
+    sudo container limit -n NAME --cpu-quota 10%
+
   * List container on the system:
     sudo container list
 
