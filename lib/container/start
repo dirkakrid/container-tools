@@ -232,7 +232,80 @@ then
 			REGISTER="--register=no"
 			;;
 	esac
+
+	BLOCK_IO_DEVICE_WEIGHT="$(awk -F= '/^BlockIODeviceWeight=/ { print $2 }' ${CONFIG}/${NAME}.conf)"
+
+	if [ -n "${BLOCK_IO_DEVICE_WEIGHT}" ]
+	then
+		BLOCK_IO_DEVICE_WEIGHT="BlockIODeviceWeight=${BLOCK_IO_DEVICE_WEIGHT}"
+		SET_PROPERTY="true"
+	fi
+
+	BLOCK_IO_READ_BANDWITH="$(awk -F= '/^BlockIOReadBandwith=/ { print $2 }' ${CONFIG}/${NAME}.conf)"
+
+	if [ -n "${BLOCK_IO_READ_BANDWITH}" ]
+	then
+		BLOCK_IO_READ_BANDWITH="BlockIOReadBandwith=${BLOCK_IO_READ_BANDWITH}"
+		SET_PROPERTY="true"
+	fi
+
+	BLOCK_IO_WEIGHT="$(awk -F= '/^BlockIOWeight=/ { print $2 }' ${CONFIG}/${NAME}.conf)"
+
+	if [ -n "${BLOCK_IO_WEIGHT}" ]
+	then
+		BLOCK_IO_WEIGHT="BlockIOWeight=${BLOCK_IO_WEIGHT}"
+		SET_PROPERTY="true"
+	fi
+
+	BLOCK_IO_WRITE_BANDWITH="$(awk -F= '/^BlockIOWriteBandwith=/ { print $2 }' ${CONFIG}/${NAME}.conf)"
+
+	if [ -n "${BLOCK_IO_WRITE_BANDWITH}" ]
+	then
+		BLOCK_IO_WRITE_BANDWITH="BlockIOWriteBandwith=${BLOCK_IO_WRITE_BANDWITH}"
+		SET_PROPERTY="true"
+	fi
+
+	CPU_QUOTA="$(awk -F= '/^CPUQuota=/ { print $2 }' ${CONFIG}/${NAME}.conf)"
+
+	if [ -n "${CPU_QUOTA}" ]
+	then
+		CPU_QUOTA="CPUQuota=${CPU_QUOTA}"
+		SET_PROPERTY="true"
+	fi
+
+	CPU_SHARES="$(awk -F= '/^CPUShares=/ { print $2 }' ${CONFIG}/${NAME}.conf)"
+
+	if [ -n "${CPU_SHARES}" ]
+	then
+		CPU_SHARES="CPUShares=${CPU_SHARES}"
+		SET_PROPERTY="true"
+	fi
+
+	MEMORY_LIMIT="$(awk -F= '/^MemoryLimit=/ { print $2 }' ${CONFIG}/${NAME}.conf)"
+
+	if [ -n "${MEMORY_LIMIT}" ]
+	then
+		MEMORY_LIMIT="MemoryLimit=${MEMORY_LIMIT}"
+		SET_PROPERTY="true"
+	fi
+
+	TASKS_MAX="$(awk -F= '/^TasksMax=/ { print $2 }' ${CONFIG}/${NAME}.conf)"
+
+	if [ -n "${TASKS_MAX}" ]
+	then
+		TASKS_MAX="TasksMax=${TASKS_MAX}"
+		SET_PROPERTY="true"
+	fi
 fi
 
 # Run
-${SETARCH} systemd-nspawn ${BIND} ${BOOT} ${CAPABILITY} ${DIRECTORY} ${DROP_CAPABILITY} ${MACHINE} ${NETWORK_BRIDGE} ${NETWORK_VETH} ${LINK_JOURNAL} ${REGISTER}
+case "${SET_PROPERTY}" in
+	true)
+		${SETARCH} systemd-nspawn ${BIND} ${BOOT} ${CAPABILITY} ${DIRECTORY} ${DROP_CAPABILITY} ${MACHINE} ${NETWORK_BRIDGE} ${NETWORK_VETH} ${LINK_JOURNAL} ${REGISTER} & \
+		systemctl --runtime set-property ${NAME} ${BLOCK_IO_DEVICE_WEIGHT} ${BLOCK_IO_READ_BANDWITH} ${BLOCK_IO_WEIGHT} ${BLOCK_IO_WRITE_BANDWITH} ${CPU_QUOTA} ${CPU_SHARES} ${MEMORY_LIMIT} ${TASKS_MAX}
+		;;
+
+	*)
+		${SETARCH} systemd-nspawn ${BIND} ${BOOT} ${CAPABILITY} ${DIRECTORY} ${DROP_CAPABILITY} ${MACHINE} ${NETWORK_BRIDGE} ${NETWORK_VETH} ${LINK_JOURNAL} ${REGISTER}
+		;;
+esac

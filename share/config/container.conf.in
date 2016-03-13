@@ -12,3 +12,13 @@ network-veth=@NETWORK_VETH@
 network-bridge=@NETWORK_BRIDGE@
 link-journal=@LINK_JOURNAL@
 register=@REGISTER@
+
+[limit]
+BlockIODeviceWeight=
+BlockIOReadBandwidth=
+BlockIOWeight=
+BlockIOWriteBandwidth=
+CPUQuota=
+CPUShares=
+MemoryLimit=
+TasksMax=
