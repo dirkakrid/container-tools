@@ -97,11 +97,13 @@ case "${FORCE}" in
 		;;
 
 	*)
-		echo -n "'${NAME}': remove container '${NAME}'? "
+		echo -n "'${NAME}': remove container '${NAME}' [y|N]? "
 		read FORCE
 
+		FORCE="$(echo ${FORCE} | tr [A-Z] [a-z])"
+
 		case "${FORCE}" in
-			y|Y)
+			y|yes)
 				;;
 
 			*)
