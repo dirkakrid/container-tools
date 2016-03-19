@@ -22,46 +22,164 @@ COMMAND="$(basename ${0})"
 
 MACHINES="/var/lib/machines"
 
+Parameters ()
+{
+	LONG_OPTIONS="all,format:,started,stopped"
+	OPTIONS="a,f:,s,t"
+
+	PARAMETERS="$(getopt --longoptions ${LONG_OPTIONS} --name=${COMMAND} --options ${OPTIONS} --shell sh -- ${@})"
+
+	if [ "${?}" != "0" ]
+	then
+		echo "'${COMMAND}': getopt exit" >&2
+		exit 1
+	fi
+
+	eval set -- "${PARAMETERS}"
+
+	while true
+	do
+		case "${1}" in
+			-a|--all)
+				LIST="all"
+				shift 1
+				;;
+
+			-f|--format)
+				FORMAT="${2}"
+				shift 2
+				;;
+
+			-s|--started)
+				LIST="started"
+				shift 1
+				;;
+
+			-t|--stopped)
+				LIST="stopped"
+				shift 1
+				;;
+
+			--)
+				shift 1
+				break
+				;;
+
+			*)
+				echo "'${COMMAND}': getopt error" >&2
+				exit 1
+				;;
+		esac
+	done
+}
+
 Usage ()
 {
-	echo "Usage: container ${COMMAND}" >&2
+	echo "Usage: container ${COMMAND} -a|--all --format FORMAT -s|--started -t|--stopped" >&2
 	exit 1
 }
 
-if [ -n "${1}" ]
-then
-	Usage
-fi
+Parameters "${@}"
+
+LIST="${LIST:-all}"
+FORMAT="${FORMAT:-full}"
 
 # Run
+case "${FORMAT}" in
+	full)
+		RED="$(tput setaf 1)$(tput bold)"
+		GREEN="$(tput setaf 2)$(tput bold)"
+		YELLOW="$(tput setaf 3)$(tput bold)"
+		BLUE="$(tput setaf 4)$(tput bold)"
+		NORMAL="$(tput sgr0)"
+
+cat << EOF
+Container                                                 IPv4 Address   Status
+--------------------------------------------------------------------------------
+EOF
+
+		;;
+
+	short)
+		;;
+esac
+
 CONTAINERS="$(cd "${MACHINES}" && find -maxdepth 1 -type d -and -not -name 'lost+found' -printf '%P\n' | sort)"
 
-echo RUNNING
-
 for CONTAINER in ${CONTAINERS}
 do
+	# FIXME: ignore lxc container for now
+	if [ -e "${MACHINES}/${CONTAINER}/rootfs" ]
+	then
+		continue
+	fi
+
 	STATE="$(machinectl show ${CONTAINER} 2>&1 | awk -F= '/^State=/ { print $2 }')"
+
+	if [ -e "${MACHINES}/${CONTAINER}/etc/network/interfaces" ]
+	then
+		ADDRESS="$(awk '/address/ { print $2 }' ${MACHINES}/${CONTAINER}/etc/network/interfaces)"
+	else
+		ADDRESS="n/a"
+	fi
 
 	case "${STATE}" in
 		running)
-			echo " ${CONTAINER}"
-			;;
-	esac
-done
+			STATUS="${GREEN}started${NORMAL}"
 
-echo
-echo STOPPED
-
-for CONTAINER in ${CONTAINERS}
-do
-	STATE="$(machinectl show ${CONTAINER} 2>&1 | awk -F= '/^State=/ { print $2 }')"
-
-	case "${STATE}" in
-		running)
 			;;
 
 		*)
-			echo " ${CONTAINER}"
+			STATUS="${RED}stopped${NORMAL}"
+			;;
+	esac
+
+	case "${LIST}" in
+		all)
+			case "${FORMAT}" in
+				short)
+					printf "${CONTAINER}\n"
+					;;
+
+				full)
+					printf "%-72s %-29s %-7s\n" "${BLUE}${CONTAINER}${NORMAL}" "${YELLOW}${ADDRESS}${NORMAL}" "${STATUS}"
+					;;
+			esac
+			;;
+
+		started)
+			case "${STATE}" in
+				running)
+					case "${FORMAT}" in
+						short)
+							printf "${CONTAINER}\n"
+							;;
+
+						full)
+							printf "%-72s %-29s %-7s\n" "${BLUE}${CONTAINER}${NORMAL}" "${YELLOW}${ADDRESS}${NORMAL}" "${STATUS}"
+							;;
+					esac
+					;;
+			esac
+			;;
+
+		stopped)
+			case "${STATE}" in
+				running)
+					;;
+
+				*)
+					case "${FORMAT}" in
+						short)
+							printf "${CONTAINER}\n"
+							;;
+
+						full)
+							printf "%-72s %-29s %-7s\n" "${BLUE}${CONTAINER}${NORMAL}" "${YELLOW}${ADDRESS}${NORMAL}" "${STATUS}"
+							;;
+					esac
+					;;
+			esac
 			;;
 	esac
 done
