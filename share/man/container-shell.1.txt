@@ -24,7 +24,7 @@ CONTAINER(1)
 
 NAME
 ----
-container-shell - Manage systemd-nspawn Containers (shell)
+container-shell - Manage systemd-nspawn containers (shell)
 
 
 SYNOPSIS
@@ -34,7 +34,7 @@ SYNOPSIS
 
 DESCRIPTION
 -----------
-container-tools provides the integration for Debian based Containers using systemd-nspawn.
+container-tools provides the integration for Debian based containers using systemd-nspawn.
 
 
 COMMANDS

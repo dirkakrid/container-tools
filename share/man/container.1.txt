@@ -24,7 +24,7 @@ CONTAINER(1)
 
 NAME
 ----
-container - Manage systemd-nspawn Containers
+container - Manage systemd-nspawn containers
 
 
 SYNOPSIS
@@ -34,7 +34,7 @@ SYNOPSIS
 
 DESCRIPTION
 -----------
-container-tools provides the integration for Debian based Containers using systemd-nspawn.
+container-tools provides the integration for Debian based containers using systemd-nspawn.
 
 
 OPTIONS
