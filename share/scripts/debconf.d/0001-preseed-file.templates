@@ -1,6 +1,6 @@
 Template: cnt-debconf/title
 Type: title
-Description: Open Infrastructure: container-tools
+Description: container-tools
 
 Template: cnt-debconf/preseed-files
 Type: select
