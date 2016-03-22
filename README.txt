@@ -5,13 +5,13 @@ Open Infrastructure: container-tools
 1. Description
 --------------
 
-  "[A Linux Container] is an operating-system-level virtualization environment
+  "[A Linux container] is an operating-system-level virtualization environment
   for running multiple isolated Linux systems (containers) on a single Linux
   control host."
 
     -- Wikipedia (https://en.wikipedia.org/wiki/LXC)
 
-container-tools provides the integration for Debian based Containers using
+container-tools provides the integration for Debian based containers using
 systemd-nspawn.
 
 
