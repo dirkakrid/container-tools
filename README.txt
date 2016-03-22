@@ -37,7 +37,13 @@ systemd-nspawn.
   * sudo apt install open-infrastructure-container-tools
 
 
-4. Usage
+4. Development
+--------------
+
+Bug reports, feature requests, and patches are welcome. Please base them against the 'next' Git branch.
+
+
+5. Usage
 --------
 
   * Create a new container:
@@ -68,7 +74,7 @@ systemd-nspawn.
     container version
 
 
-5. Links
+6. Links
 --------
 
   * 2016-02-24: Systemd vs. Docker
@@ -93,7 +99,7 @@ systemd-nspawn.
     https://lwn.net/Articles/531114/
 
 
-6. Authors
+7. Authors
 ----------
 
   * Daniel Baumann <daniel.baumann@open-infrastructure.net>
