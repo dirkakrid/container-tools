@@ -70,6 +70,9 @@ Please base them against the 'next' Git branch using common sense:
   * Attach console to a container:
     sudo container console -n NAME
 
+  * Run commands in a container:
+    sudo container run -n NAME [COMMANDS]
+
   * Limit ressources of a container:
     sudo container limit -n NAME --cpu-quota 10%
 
