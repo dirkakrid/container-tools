@@ -57,6 +57,12 @@ DEBIAN 8 (STRETCH) AND NEWER
   * sudo apt install open-infrastructure-container-tools
 
 
+DEVELOPMENT
+-----------
+
+Bug reports, feature requests, and patches are welcome. Please base them against the 'next' Git branch.
+
+
 USAGE
 -----
 
