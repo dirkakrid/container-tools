@@ -24,7 +24,7 @@ CONTAINER-CREATE-DEBOOTSTRAP(1)
 
 NAME
 ----
-container-create-debootstrap - Create a Debian container with debootstrap
+container-create-debootstrap - Create a basic Debian based container with debootstrap
 
 
 SYNOPSIS
@@ -34,7 +34,7 @@ SYNOPSIS
 
 DESCRIPTION
 -----------
-The debootstrap container creation script uses debootstrap(8) to create a Debian container.
+The debootstrap container creation script uses debootstrap(8) to create a Debian based container.
 
 This script creates a pure Debian system with three modificiations:
 
@@ -65,10 +65,10 @@ The following script options are available:
 
 EXAMPLES
 --------
-*Create a Debian 8 (jessie) container with same architecture as the host system:*::
+*Create a Debian 8 (jessie) based container with same architecture as the host system:*::
 	sudo container create -s debootstrap -n jessie.example.net
 
-*Create a Debian 8 (jessie) with different architecture as the host system:*::
+*Create a Debian 8 (jessie) based container with different architecture as the host system:*::
 	sudo container create -s debootstrap -n jessie-i386.example.net -- -a i386
 
 

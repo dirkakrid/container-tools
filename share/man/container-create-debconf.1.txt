@@ -24,7 +24,7 @@ CONTAINER-CREATE-DEBOOTSTRAP(1)
 
 NAME
 ----
-container-create-debconf - Create a Debian based container with debconf
+container-create-debconf - Create an advanced Debian based container with debconf
 
 
 SYNOPSIS

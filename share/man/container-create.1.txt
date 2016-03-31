@@ -62,7 +62,7 @@ SCRIPTS
 The following container scripts are available:
 
 *debootstrap*::
-	Basic script to create Debian container, see container-create-debootstrap(1).
+	Basic script to create Debian based container, see container-create-debootstrap(1).
 
 *debconf*::
 	Advanced script to automatically create Debian based container, see container-create-debconf(1).
