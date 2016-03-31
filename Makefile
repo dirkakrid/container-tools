@@ -53,6 +53,8 @@ build: share/man/*.txt
 	$(MAKE) -C share/man
 
 install: build
+	mkdir -p $(DESTDIR)/etc/container-tools/config
+
 	mkdir -p $(DESTDIR)/usr/bin
 	cp -r bin/* $(DESTDIR)/usr/bin
 
@@ -99,6 +101,8 @@ uninstall:
 		rm -f $(DESTDIR)/usr/bin/$$(basename $${FILE}); \
 	done
 	rmdir --ignore-fail-on-non-empty --parents $(DESTDIR)/usr/bin || true
+
+	rmdir --ignore-fail-on-non-empty --parents $(DESTDIR)/etc/container-tools/config || true
 
 clean:
 	$(MAKE) -C share/man clean
