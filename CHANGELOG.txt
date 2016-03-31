@@ -1,3 +1,19 @@
+2016-04-01	Daniel Baumann <daniel.baumann@open-infrastructure.net>
+
+	* Releasing version 20160401.
+	* Addding native ARM architecture support.
+	* Adding new container programs:
+	  - container-autostart
+	  - container-shell
+	* Adding new container commands:
+	  - limit
+	* Adding new container scripts:
+	  - debconf
+	* Adding new container config options:
+	  - capability and drop-capability
+	  - blockio, cpu, memory and tasks limits
+	* Adding new and updating existing documentation.
+
 2016-03-01	Daniel Baumann <daniel.baumann@open-infrastructure.net>
 
 	* Releasing version 20160301.
