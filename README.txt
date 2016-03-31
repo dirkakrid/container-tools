@@ -1,5 +1,5 @@
-Open Infrastructure: container-tools
-====================================
+container-tools - Manage systemd-nspawn containers
+==================================================
 
 
 1. Description
@@ -11,7 +11,7 @@ Open Infrastructure: container-tools
 
     -- Wikipedia (https://en.wikipedia.org/wiki/LXC)
 
-container-tools provides the integration for Debian based containers using
+container-tools provides the system integration for managing containers using
 systemd-nspawn.
 
 
