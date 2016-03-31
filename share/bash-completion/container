@@ -1,0 +1,43 @@
+# Open Infrastructure: container-tools
+# Copyright (C) 2014-2016 Daniel Baumann <daniel.baumann@open-infrastructure.net>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#set -e
+
+_container()
+{
+	local cur prev opts base
+	COMPREPLY=()
+	cur="${COMP_WORDS[COMP_CWORD]}"
+	prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+	opts="$(for COMMAND in $(ls -1 /usr/lib/container-tools | grep -v .d$); do echo ${COMMAND/\/usr\/share\/container-tools\//}; done)"
+
+	case "${prev}" in
+		list|FIXME)
+			;;
+
+		*)
+			local container_name=$(ls -1d /var/lib/machines/*/ >&2 | sed -e 's|/$||g')
+			COMPREPLY=( $(compgen -W "${container_names}" -- ${cur}) )
+			return 0
+			;;
+	esac
+
+	COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
+	return 0
+}
+
+complete -F _container container

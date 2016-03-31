@@ -65,6 +65,9 @@ install: build
 	mkdir -p $(DESTDIR)/usr/share/$(SOFTWARE)
 	cp -r VERSION.txt share/config share/scripts ${DESTDIR}/usr/share/$(SOFTWARE)
 
+	mkdir -p $(DESTDIR)/usr/share/bash-completion/completions
+	cp -r share/bash-completion/* $(DESTDIR)/usr/share/bash-completion/completions
+
 	mkdir -p $(DESTDIR)/usr/share/doc/$(SOFTWARE)
 	cp -r share/doc $(DESTDIR)/usr/share/doc/$(SOFTWARE)
 
@@ -117,6 +120,12 @@ uninstall:
 	rm -f $(DESTDIR)/usr/share/man/man1/cnt.1
 	rm -f $(DESTDIR)/usr/bin/cntsh
 	rm -f $(DESTDIR)/usr/share/man/man1/cntsh.1
+
+	for FILE in share/bash-completion/*; \
+	do \
+		rm -f $(DESTDIR)/usr/share/bash-completion/completions/$$(basename $${FILE}); \
+	done
+	rmdir --ignore-fail-on-non-empty --parents $(DESTDIR)/usr/share || true
 
 	rm -rf $(DESTDIR)/usr/share/doc/$(SOFTWARE)
 	rmdir --ignore-fail-on-non-empty --parents $(DESTDIR)/usr/share/doc || true
