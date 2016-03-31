@@ -34,7 +34,7 @@ SYNOPSIS
 
 DESCRIPTION
 -----------
-container-tools provides the integration for Debian based containers using systemd-nspawn.
+container-tools provides the system integration for managing containers using systemd-nspawn.
 
 
 COMMANDS
