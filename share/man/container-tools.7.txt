@@ -41,6 +41,22 @@ DOWNLOAD
   * https://github.com/open-infrastructure/container-tools
 
 
+INSTALLATION
+------------
+
+SOURCE
+~~~~~~
+
+  1. sudo apt instal asciidoc git docbook-xml docbook-xsl libxml2-utils make xsltproc
+  2. git clone https://github.com/open-infrastructure/container-tools
+  3. cd container-tools && sudo make install
+
+DEBIAN 8 (STRETCH) AND NEWER
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  * sudo apt install open-infrastructure-container-tools
+
+
 USAGE
 -----
 
