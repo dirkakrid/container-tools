@@ -43,6 +43,12 @@ Shell ()
 	OPTIONS="${@}"
 
 	case "${COMMAND}" in
+		about)
+			man ${PROGRAM} || true
+
+			return
+			;;
+
 		logout)
 			exit 0
 			;;
@@ -55,7 +61,7 @@ Shell ()
 					echo
 
 					cd "/usr/lib/${SOFTWARE}/${PROGRAM}"
-					echo "$(for COMMAND in * logout; do echo ${COMMAND}; done | sort)"
+					echo "$(for COMMAND in about logout *; do echo ${COMMAND}; done | sort)"
 					cd "${OLDPWD}"
 
 					return
