@@ -87,8 +87,8 @@ Shell ()
 
 trap 'echo' EXIT HUP INT QUIT TERM
 
-echo "${PROGRAM}-shell $(${PROGRAM} version)"
-echo "Type \"help\" for more information, type \"logout\" to exit."
+echo "${SOFTWARE} $(${PROGRAM} version)"
+echo "Type \"about\" or \"help\" for more information, \"logout\" to exit."
 
 while true
 do
