@@ -81,6 +81,7 @@ Shell ()
 		echo "'${COMMAND}': no such ${PROGRAM} command" >&2
 		return
 	else
+		echo
 		"/usr/lib/${SOFTWARE}/${PROGRAM}/${COMMAND}" "${OPTIONS}" || true
 	fi
 }
