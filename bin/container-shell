@@ -62,7 +62,7 @@ Shell ()
 					;;
 
 				*)
-					man ${PROGRAM}-${1}
+					man ${PROGRAM}-${1} || true
 
 					return
 					;;
