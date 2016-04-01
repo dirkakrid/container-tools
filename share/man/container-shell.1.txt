@@ -39,7 +39,19 @@ container-tools provides the system integration for managing containers using sy
 
 COMMANDS
 --------
-All container commands are available, see container(1).
+All container commands are available, see container(1). Additionally, the following commands are specific to container-shell:
+
+*about:*::
+	shows introduction (manpage).
+
+*help:*::
+	shows available commands within the container-shell.
+
+*help COMMAND:*::
+	shows help (manpage) for a specific container command.
+
+*logout:*::
+	exits container-shell.
 
 
 SEE ALSO
