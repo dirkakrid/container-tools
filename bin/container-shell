@@ -43,7 +43,7 @@ Shell ()
 	OPTIONS="${@}"
 
 	case "${COMMAND}" in
-		exit|logout|quit)
+		logout)
 			exit 0
 			;;
 
