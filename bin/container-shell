@@ -52,9 +52,10 @@ Shell ()
 				"")
 					echo
 					echo "The following ${PROGRAM} commands are available:"
+					echo
 
 					cd "/usr/lib/${SOFTWARE}/${PROGRAM}"
-					ls
+					echo "$(for COMMAND in * logout; do echo ${COMMAND}; done | sort)"
 					cd "${OLDPWD}"
 
 					return
