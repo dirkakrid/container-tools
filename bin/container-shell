@@ -61,7 +61,7 @@ Shell ()
 					;;
 
 				*)
-					man container-${1}
+					man ${PROGRAM}-${1}
 
 					return
 					;;
