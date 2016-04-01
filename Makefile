@@ -77,8 +77,8 @@ install: build
 		fi; \
 	done
 
-	ln -s container.1 $(DESTDIR)/usr/share/man/man1/cnt.1
-	ln -s container-shell.1 $(DESTDIR)/usr/share/man/man1/cntsh.1
+	ln -sf container.1 $(DESTDIR)/usr/share/man/man1/cnt.1
+	ln -sf container-shell.1 $(DESTDIR)/usr/share/man/man1/cntsh.1
 
 	mkdir -p $(DESTDIR)/lib/systemd/system
 	cp -r share/systemd/* $(DESTDIR)/lib/systemd/system
