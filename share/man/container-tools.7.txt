@@ -54,7 +54,7 @@ SOURCE
 DEBIAN 8 (STRETCH) AND NEWER
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  * sudo apt install open-infrastructure-container-tools
+  * sudo apt install container-tools
 
 
 DEVELOPMENT

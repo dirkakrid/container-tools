@@ -34,7 +34,7 @@ systemd-nspawn.
 3.2 Debian 8 (stretch) and newer
 --------------------------------
 
-  * sudo apt install open-infrastructure-container-tools
+  * sudo apt install container-tools
 
 
 4. Development
