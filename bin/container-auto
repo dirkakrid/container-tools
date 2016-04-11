@@ -18,6 +18,16 @@
 
 set -e
 
+case "${1}" in
+	start)
+		;;
+
+	*)
+		echo "Usage: ${0} {start}" # FIXME
+		exit 1
+		;;
+esac
+
 if [ ! -x /usr/bin/screen ]
 then
 	echo "'${NAME}': /usr/bin/screen - no such file." >&2

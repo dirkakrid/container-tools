@@ -5,7 +5,7 @@ After=network.target
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/usr/bin/container-autostart
+ExecStart=/usr/bin/container-auto start
 #ExecStop=
 Delegate=yes
 StandardOutput=syslog
