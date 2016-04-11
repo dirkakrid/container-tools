@@ -82,6 +82,11 @@ install: build
 	ln -sf container-shell $(DESTDIR)/usr/bin/cntsh
 	ln -sf container-shell.1 $(DESTDIR)/usr/share/man/man1/cntsh.1
 
+	ln -sf debconf ${DESTDIR}/usr/share/$(SOFTWARE)/scripts/debian
+	ln -sf debconf.d ${DESTDIR}/usr/share/$(SOFTWARE)/scripts/debian.d
+	ln -sf debconf ${DESTDIR}/usr/share/$(SOFTWARE)/scripts/progress-linux
+	ln -sf debconf.d ${DESTDIR}/usr/share/$(SOFTWARE)/scripts/progress-linux.d
+
 	mkdir -p $(DESTDIR)/lib/systemd/system
 	cp -r share/systemd/* $(DESTDIR)/lib/systemd/system
 
