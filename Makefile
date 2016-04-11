@@ -84,8 +84,10 @@ install: build
 
 	ln -sf debconf ${DESTDIR}/usr/share/$(SOFTWARE)/scripts/debian
 	ln -sf debconf.d ${DESTDIR}/usr/share/$(SOFTWARE)/scripts/debian.d
+	ln -sf container-create-debconf.1 $(DESTDIR)/usr/share/man/man1/container-create-debian.1
 	ln -sf debconf ${DESTDIR}/usr/share/$(SOFTWARE)/scripts/progress-linux
 	ln -sf debconf.d ${DESTDIR}/usr/share/$(SOFTWARE)/scripts/progress-linux.d
+	ln -sf container-create-debconf.1 $(DESTDIR)/usr/share/man/man1/container-create-progress-linux.1
 
 	mkdir -p $(DESTDIR)/lib/systemd/system
 	cp -r share/systemd/* $(DESTDIR)/lib/systemd/system
