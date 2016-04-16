@@ -1,3 +1,16 @@
+2016-04-15	Daniel Baumann <daniel.baumann@open-infrastructure.net>
+
+	* Releasing version 20160415.
+	* Fixing minor issues:
+	  - build system
+	  - container-shell program
+	  - documentation
+	  - systemd unit for container-autostart
+	* Updated debian default mirror from httpredir.debian.org to ftp.debian.org.
+
+	* Backward incompatible changes:
+	  - container stop command option -k|--kill renamed to -f|--force for consistency
+
 2016-04-01	Daniel Baumann <daniel.baumann@open-infrastructure.net>
 
 	* Releasing version 20160401.
