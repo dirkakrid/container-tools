@@ -298,7 +298,7 @@ Mirror ()
 	then
 		case "${MODE}" in
 			debian)
-				db_set cnt-debconf/mirror http://httpredir.debian.org/debian
+				db_set cnt-debconf/mirror http://ftp.debian.org/debian
 				db_fset cnt-debconf/mirror seen false
 				;;
 
@@ -319,7 +319,7 @@ Mirror ()
 		then
 			case "${MODE}" in
 				debian)
-					MIRROR="http://httpredir.debian.org/debian"
+					MIRROR="http://ftp.debian.org/debian"
 					;;
 
 				progress-linux)
@@ -391,7 +391,7 @@ Parent_mirror ()
 	then
 		case "${MODE}" in
 			progress-linux)
-				db_set cnt-debconf/parent-mirror http://httpredir.debian.org/debian
+				db_set cnt-debconf/parent-mirror http://ftp.debian.org/debian
 				db_fset cnt-debconf/parent-mirror seen false
 
 				db_settitle cnt-debconf/title
@@ -412,7 +412,7 @@ Parent_mirror ()
 		then
 			case "${MODE}" in
 				progress-linux)
-					PARENT_MIRROR="http://httpredir.debian.org/debian"
+					PARENT_MIRROR="http://ftp.debian.org/debian"
 					;;
 
 				*)
