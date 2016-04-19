@@ -702,7 +702,7 @@ EOF
 	then
 		echo "${CONTAINER_COMMAND}" > "${DIRECTORY}/.container-command"
 
-		chmod 0755 "sh /.container-command"
+		chmod 0755 "${DIRECTORY}/.container-command"
 		Chroot "${DIRECTORY}" "sh /.container-command"
 
 		rm -f "${DIRECTORY}/.container-command"
