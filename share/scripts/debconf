@@ -749,7 +749,7 @@ EOF
 			none)
 
 cat >> "${DIRECTORY}/etc/network/interfaces.tmp" << EOF
-iface host${NUMBER} inet manual
+iface eth${NUMBER} inet manual
 EOF
 
 				;;
@@ -757,8 +757,8 @@ EOF
 			dhcp)
 
 cat >> "${DIRECTORY}/etc/network/interfaces.tmp" << EOF
-auto host${NUMBER}
-iface host${NUMBER} inet dhcp
+auto eth${NUMBER}
+iface eth${NUMBER} inet dhcp
 EOF
 
 				;;
@@ -766,8 +766,8 @@ EOF
 			static)
 
 cat >> "${DIRECTORY}/etc/network/interfaces.tmp" << EOF
-auto host${NUMBER}
-iface host${NUMBER} inet static
+auto eth${NUMBER}
+iface eth${NUMBER} inet static
 	address		${IPV4_ADDRESS}
 EOF
 
