@@ -43,7 +43,13 @@ Shell ()
 	OPTIONS="${@}"
 
 	case "${COMMAND}" in
-		exit|logout|quit)
+		about)
+			man ${PROGRAM} || true
+
+			return
+			;;
+
+		logout)
 			exit 0
 			;;
 
@@ -52,16 +58,17 @@ Shell ()
 				"")
 					echo
 					echo "The following ${PROGRAM} commands are available:"
+					echo
 
 					cd "/usr/lib/${SOFTWARE}/${PROGRAM}"
-					ls
+					echo "$(for COMMAND in about logout *; do echo ${COMMAND}; done | sort)"
 					cd "${OLDPWD}"
 
 					return
 					;;
 
 				*)
-					man container-${1}
+					man ${PROGRAM}-${1} || true
 
 					return
 					;;
@@ -74,14 +81,15 @@ Shell ()
 		echo "'${COMMAND}': no such ${PROGRAM} command" >&2
 		return
 	else
+		echo
 		"/usr/lib/${SOFTWARE}/${PROGRAM}/${COMMAND}" "${OPTIONS}" || true
 	fi
 }
 
 trap 'echo' EXIT HUP INT QUIT TERM
 
-echo "${PROGRAM}-shell $(${PROGRAM} version)"
-echo "Type \"help\" for more information."
+echo "${SOFTWARE} $(${PROGRAM} version)"
+echo "Type \"about\" or \"help\" for more information, \"logout\" to exit."
 
 while true
 do

@@ -77,8 +77,17 @@ install: build
 		fi; \
 	done
 
-	ln -s container.1 $(DESTDIR)/usr/share/man/man1/cnt.1
-	ln -s container-shell.1 $(DESTDIR)/usr/share/man/man1/cntsh.1
+	ln -sf container $(DESTDIR)/usr/bin/cnt
+	ln -sf container.1 $(DESTDIR)/usr/share/man/man1/cnt.1
+	ln -sf container-shell $(DESTDIR)/usr/bin/cntsh
+	ln -sf container-shell.1 $(DESTDIR)/usr/share/man/man1/cntsh.1
+
+	ln -sf debconf ${DESTDIR}/usr/share/$(SOFTWARE)/scripts/debian
+	ln -sf debconf.d ${DESTDIR}/usr/share/$(SOFTWARE)/scripts/debian.d
+	ln -sf container-create-debconf.1 $(DESTDIR)/usr/share/man/man1/container-create-debian.1
+	ln -sf debconf ${DESTDIR}/usr/share/$(SOFTWARE)/scripts/progress-linux
+	ln -sf debconf.d ${DESTDIR}/usr/share/$(SOFTWARE)/scripts/progress-linux.d
+	ln -sf container-create-debconf.1 $(DESTDIR)/usr/share/man/man1/container-create-progress-linux.1
 
 	mkdir -p $(DESTDIR)/lib/systemd/system
 	cp -r share/systemd/* $(DESTDIR)/lib/systemd/system
@@ -104,7 +113,9 @@ uninstall:
 		rmdir --ignore-fail-on-non-empty --parents $(DESTDIR)/usr/share/man/man$${SECTION} || true; \
 	done
 
+	rm -f $(DESTDIR)/usr/bin/cnt
 	rm -f $(DESTDIR)/usr/share/man/man1/cnt.1
+	rm -f $(DESTDIR)/usr/bin/cntsh
 	rm -f $(DESTDIR)/usr/share/man/man1/cntsh.1
 
 	rm -rf $(DESTDIR)/usr/share/doc/$(SOFTWARE)

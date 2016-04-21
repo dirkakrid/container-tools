@@ -34,7 +34,7 @@ then
 fi
 
 # Run
-CONTAINERS="$(cd "${MACHINES}" && find -maxdepth 1 -type d -printf '%P\n' | sort)"
+CONTAINERS="$(cd "${MACHINES}" && find -maxdepth 1 -type d -and -not -name 'lost+found' -printf '%P\n' | sort)"
 
 echo RUNNING
 

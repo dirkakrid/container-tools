@@ -24,8 +24,8 @@ MACHINES="/var/lib/machines"
 
 Parameters ()
 {
-	LONG_OPTIONS="name:,kill"
-	OPTIONS="n:,k"
+	LONG_OPTIONS="name:,force"
+	OPTIONS="n:,f"
 
 	PARAMETERS="$(getopt --longoptions ${LONG_OPTIONS} --name=${COMMAND} --options ${OPTIONS} --shell sh -- ${@})"
 
@@ -45,8 +45,8 @@ Parameters ()
 				shift 2
 				;;
 
-			-k|--kill)
-				KILL="true"
+			-f|--force)
+				FORCE="true"
 				;;
 
 			--)
@@ -64,7 +64,7 @@ Parameters ()
 
 Usage ()
 {
-	echo "Usage: container ${COMMAND} -n|--name NAME [-k|--kill]" >&2
+	echo "Usage: container ${COMMAND} -n|--name NAME [-f|--force]" >&2
 	exit 1
 }
 
@@ -93,7 +93,7 @@ case "${STATE}" in
 		;;
 esac
 
-case "${KILL}" in
+case "${FORCE}" in
 	true)
 		MODE="terminate"
 		;;

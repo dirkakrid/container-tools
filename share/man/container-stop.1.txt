@@ -44,7 +44,7 @@ The following container options are available:
 *-n, --name='NAME'*::
 	Specify container name.
 
-*-k, --kill*::
+*-f, --force*::
 	Instead of running the proper shutdown sequence, terminate all processes of the container imediatly.
 
 
@@ -54,7 +54,7 @@ EXAMPLES
 	sudo container stop -n example.net
 
 *Immediately stop example.net container:*::
-	sudo container stop -n example.net -k
+	sudo container stop -n example.net -f
 
 
 SEE ALSO
