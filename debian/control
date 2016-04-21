@@ -12,8 +12,8 @@ Build-Depends:
  xsltproc,
 Standards-Version: 3.9.8
 Homepage: http://open-infrastructure.net/container-tools
-Vcs-Browser: https://github.com/open-infrastructure/container-tools
-Vcs-Git: https://github.com/open-infrastructure/container-tools
+Vcs-Browser: https://github.com/daniel-baumann/open-infrastructure-container-tools
+Vcs-Git: https://github.com/daniel-baumann/open-infrastructure-container-tools
 
 Package: open-infrastructure-container-tools
 Architecture: all
