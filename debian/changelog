@@ -1,3 +1,21 @@
+open-infrastructure-container-tools (20160401-1) unstable; urgency=low
+
+  * Uploading to sid.
+  * Merging upstream version 20160401.
+  * Adding gitignore file.
+  * Building with dh-systemd.
+  * Adding screen to recommends.
+  * Using https instead of git protocol in vcs-git field.
+  * Correcting spelling in package long-description.
+  * Updating package long-description.
+  * Disabling dh_auto_build target in rules to prevent manpages being
+    built twice.
+  * Running dh_systemd_start with --no-restart-on-upgrade to prevent
+    automatically started screen session to be killed on upgrades.
+  * Adding provides container-tools.
+
+ -- Daniel Baumann <mail@daniel-baumann.ch>  Thu, 31 Mar 2016 12:25:09 +0200
+
 open-infrastructure-container-tools (20160301-1) unstable; urgency=low
 
   * Initial upload to sid (Closes: #816418).
