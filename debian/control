@@ -23,6 +23,7 @@ Depends:
  ${misc:Depends},
 Recommends:
  debootstrap,
+ screen,
 Conflicts:
  radiance,
 Description: Tools to manage systemd-nspawn containers
