@@ -26,6 +26,8 @@ Recommends:
  screen,
 Conflicts:
  radiance,
+Provides:
+ container-tools,
 Description: Tools to manage systemd-nspawn containers
  A Linux container is an operating-system-level virtualization environment for
  running multiple isolated Linux systems (containers) on a single Linux control
