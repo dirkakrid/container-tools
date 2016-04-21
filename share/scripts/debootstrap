@@ -1,0 +1,135 @@
+#!/bin/sh
+
+# Open Infrastructure: container-tools
+# Copyright (C) 2014-2016 Daniel Baumann <daniel.baumann@open-infrastructure.net>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+set -e
+
+SCRIPT="${0}"
+
+MACHINES="/var/lib/machines"
+
+Parameters ()
+{
+	LONG_OPTIONS="bind:,script:,name:,architecture:,distribution:,mirror:,password:"
+	OPTIONS="b:,s:,n:,a:,d:,m:,p:"
+
+	PARAMETERS="$(getopt --longoptions ${LONG_OPTIONS} --name=${SCRIPT} --options ${OPTIONS} --shell sh -- ${@})"
+
+	if [ "${?}" != "0" ]
+	then
+		echo "'${SCRIPT}': getopt exit" >&2
+		exit 1
+	fi
+
+	eval set -- "${PARAMETERS}"
+
+	while true
+	do
+		case "${1}" in
+			-b|--bind)
+				# ignore
+				shift 2
+				;;
+
+			-s|--script)
+				# ignore
+				shift 2
+				;;
+
+			-n|--name)
+				NAME="${2}"
+				shift 2
+				;;
+
+			-a|--architecture)
+				ARCHITECTURE="${2}"
+				shift 2
+				;;
+
+			-d|--distribution)
+				DISTRIBUTION="${2}"
+				shift 2
+				;;
+
+			-m|--mirror)
+				MIRROR="${2}"
+				shift 2
+				;;
+
+			-p|--password)
+				PASSWORD="${2}"
+				shift 2
+				;;
+
+			--)
+				shift 1
+				break
+				;;
+
+			*)
+				echo "'${SCRIPT}': getopt error" >&2
+				exit 1
+				;;
+		esac
+	done
+}
+
+Usage ()
+{
+	echo "Usage: container create -n|--name NAME -s|--script ${SCRIPT} [-a|--architecture ARCHITECTURE] [-d|--distribution DISTRIBUTION] [-m|--mirror MIRROR] [-p|--password PASSWORD}" >&2
+	exit 1
+}
+
+Parameters "${@}"
+
+if [ -z "${NAME}" ]
+then
+	Usage
+fi
+
+if [ -e "${MACHINES}/${NAME}" ]
+then
+	echo "'${NAME}': container already exists" >&2
+	exit 1
+fi
+
+if [ ! -x /usr/sbin/debootstrap ]
+then
+	echo "'${NAME}': /usr/sbin/debootstrap - no such file." >&2
+	exit 1
+fi
+
+if [ "$(id -u)" -ne 0 ]
+then
+	echo "'${NAME}': need root privileges" >&2
+	exit 1
+fi
+
+ARCHITECTURE="${ARCHITECTURE:-$(dpkg --print-architecture)}"
+DISTRIBUTION="${DISTRIBUTION:-jessie}"
+MIRROR="${MIRROR:-http://ftp.debian.org/debian}"
+PASSWORD="${PASSWORD:-$(dd if=/dev/urandom bs=12 count=1 2> /dev/null | base64)}"
+
+debootstrap --arch=${ARCHITECTURE} --include=dbus ${DISTRIBUTION} ${MACHINES}/${NAME} ${MIRROR}
+chroot "${MACHINES}/${NAME}" apt-get clean
+
+# Setting hostname
+echo "${NAME}" > "${MACHINES}/${NAME}/etc/hostname"
+
+# Setting root password
+echo root:${PASSWORD} | chroot "${MACHINES}/${NAME}" chpasswd
+echo "${NAME}: root password set to '${PASSWORD}'."
