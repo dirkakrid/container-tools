@@ -31,5 +31,5 @@ Description: Tools to manage systemd-nspawn containers
  running multiple isolated Linux systems (containers) on a single Linux control
  host.
  .
- container-tools provides the integration for Debian based containers using
+ container-tools provides the system integration for managing containers using
  systemd-nspawn.
