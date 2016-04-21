@@ -5,6 +5,7 @@ Maintainer: Daniel Baumann <mail@daniel-baumann.ch>
 Build-Depends:
  asciidoc,
  debhelper (>= 9),
+ dh-systemd,
  docbook-xml,
  docbook-xsl,
  libxml2-utils,
