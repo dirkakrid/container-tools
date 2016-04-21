@@ -2,3 +2,6 @@
 
 %:
 	dh ${@} --parallel --with systemd
+
+override_dh_auto_build:
+	# disabled
