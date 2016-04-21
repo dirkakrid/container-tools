@@ -4,7 +4,7 @@ open-infrastructure-container-tools (20160415-1) unstable; urgency=low
   * Merging upstream version 20160415.
   * Updating standards-version to 3.9.8.
 
- -- Daniel Baumann <daniel.baumann@open-infrastructure.net>  Sat, 16 Apr 2016 12:34:34 +0200
+ -- Daniel Baumann <mail@daniel-baumann.ch>  Sat, 16 Apr 2016 12:34:34 +0200
 
 open-infrastructure-container-tools (20160401-1) unstable; urgency=low
 
