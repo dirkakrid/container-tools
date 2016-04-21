@@ -1,4 +1,4 @@
-// Open Infrastructure: container-tools
+// container-tools - Manage systemd-nspawn containers
 // Copyright (C) 2014-2016 Daniel Baumann <daniel.baumann@open-infrastructure.net>
 //
 // This program is free software: you can redistribute it and/or modify
@@ -44,6 +44,12 @@ The following container-create options are available:
 *-n, --name='NAME'*::
 	Specify container name.
 
+*-c, --capability='CAPABILITY'*::
+	Specify capabilities to grant, see capabilities(7).
+
+*-d, --drop-capability='DROP_CAPABILITY'*::
+	Specify capabilities to drop, see capabilities(7).
+
 *-s, --script='SCRIPT'*::
 	Specify container creation script, defaults to debootstrap.
 
@@ -56,13 +62,19 @@ SCRIPTS
 The following container scripts are available:
 
 *debootstrap*::
-	Basic script to create Debian container, see container-create-debootstrap(1).
+	Basic script to create Debian based container, see container-create-debootstrap(1).
+
+*debconf*::
+	Advanced script to automatically create Debian based container, see container-create-debconf(1).
 
 
 EXAMPLES
 --------
 *Create example.net container using debootstrap script:*::
 	sudo container create -n example.net -s debootstrap
+
+*Create example.net container using debconf script:*::
+	sudo container create -n example.net -s debconf
 
 
 SEE ALSO

@@ -1,0 +1,93 @@
+#!/bin/sh
+
+# container-tools - Manage systemd-nspawn containers
+# Copyright (C) 2014-2016 Daniel Baumann <daniel.baumann@open-infrastructure.net>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+set -e
+
+SOFTWARE="container-tools"
+PROGRAM="container"
+
+COMMAND="$(basename ${0})"
+
+Usage ()
+{
+	echo "Usage: ${PROGRAM}-shell" >&2
+	exit 1
+}
+
+Shell ()
+{
+	COMMAND="${1}"
+
+	if [ -z "${COMMAND}" ]
+	then
+		return
+	fi
+
+	shift 1
+
+	OPTIONS="${@}"
+
+	case "${COMMAND}" in
+		exit|logout|quit)
+			exit 0
+			;;
+
+		help)
+			case "${OPTIONS}" in
+				"")
+					echo
+					echo "The following ${PROGRAM} commands are available:"
+
+					cd "/usr/lib/${SOFTWARE}/${PROGRAM}"
+					ls
+					cd "${OLDPWD}"
+
+					return
+					;;
+
+				*)
+					man container-${1}
+
+					return
+					;;
+			esac
+			;;
+	esac
+
+	if [ ! -e "/usr/lib/${SOFTWARE}/${PROGRAM}/${COMMAND}" ]
+	then
+		echo "'${COMMAND}': no such ${PROGRAM} command" >&2
+		return
+	else
+		"/usr/lib/${SOFTWARE}/${PROGRAM}/${COMMAND}" "${OPTIONS}" || true
+	fi
+}
+
+trap 'echo' EXIT HUP INT QUIT TERM
+
+echo "${PROGRAM}-shell $(${PROGRAM} version)"
+echo "Type \"help\" for more information."
+
+while true
+do
+	echo
+	echo -n "${PROGRAM}: "
+	read CMDLINE
+
+	Shell ${CMDLINE}
+done

@@ -18,50 +18,30 @@
 
 set -e
 
-COMMAND="$(basename ${0})"
-
-MACHINES="/var/lib/machines"
-
-Usage ()
-{
-	echo "Usage: container ${COMMAND}" >&2
-	exit 1
-}
-
-if [ -n "${1}" ]
+if [ ! -x /usr/bin/screen ]
 then
-	Usage
+	echo "'${NAME}': /usr/bin/screen - no such file." >&2
+	exit 1
 fi
 
-# Run
-CONTAINERS="$(cd "${MACHINES}" && find -maxdepth 1 -type d -printf '%P\n' | sort)"
+HOST="$(hostname -f)"
 
-echo RUNNING
+HOME="${HOME:-/root}"
+SHELL="/bin/bash"
+export HOME SHELL
 
-for CONTAINER in ${CONTAINERS}
+cd "${HOME}"
+
+#screen -S container -A -d -m -t cnt bash -cl "cntsh && bash -l"
+screen -S container -A -d -m -t cnt bash -l
+
+for CONFIG in /etc/container-tools/config/*.conf
 do
-	STATE="$(machinectl show ${CONTAINER} 2>&1 | awk -F= '/^State=/ { print $2 }')"
+	if grep -Eqs "^ *cnt.autostart=true" "${CONFIG}" || grep -Eqs "^ *cnt.autostart=${HOST}" "${CONFIG}"
+	then
+		CONTAINER="$(basename ${CONFIG} .conf)"
+		TITLE="$(echo ${CONTAINER} | awk -F. '{ print $1 }')"
 
-	case "${STATE}" in
-		running)
-			echo " ${CONTAINER}"
-			;;
-	esac
-done
-
-echo
-echo STOPPED
-
-for CONTAINER in ${CONTAINERS}
-do
-	STATE="$(machinectl show ${CONTAINER} 2>&1 | awk -F= '/^State=/ { print $2 }')"
-
-	case "${STATE}" in
-		running)
-			;;
-
-		*)
-			echo " ${CONTAINER}"
-			;;
-	esac
+		screen -S container -X screen -t ${TITLE} bash -cl "cnt start -n ${CONTAINER} && bash -l"
+	fi
 done

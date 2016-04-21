@@ -1,17 +1,17 @@
-Open Infrastructure: container-tools
-====================================
+container-tools - Manage systemd-nspawn containers
+==================================================
 
 
 1. Description
 --------------
 
-  "[A Linux Container] is an operating-system-level virtualization environment
+  "[A Linux container] is an operating-system-level virtualization environment
   for running multiple isolated Linux systems (containers) on a single Linux
   control host."
 
     -- Wikipedia (https://en.wikipedia.org/wiki/LXC)
 
-container-tools provides the integration for Debian based Containers using
+container-tools provides the system integration for managing containers using
 systemd-nspawn.
 
 
@@ -21,7 +21,29 @@ systemd-nspawn.
   * https://github.com/open-infrastructure/container-tools
 
 
-3. Usage
+3. Installation
+---------------
+
+3.1 Source
+----------
+
+  1. sudo apt instal asciidoc git docbook-xml docbook-xsl libxml2-utils make xsltproc
+  2. git clone https://github.com/open-infrastructure/container-tools
+  3. cd container-tools && sudo make install
+
+3.2 Debian 8 (stretch) and newer
+--------------------------------
+
+  * sudo apt install open-infrastructure-container-tools
+
+
+4. Development
+--------------
+
+Bug reports, feature requests, and patches are welcome. Please base them against the 'next' Git branch.
+
+
+5. Usage
 --------
 
   * Create a new container:
@@ -42,6 +64,9 @@ systemd-nspawn.
   * Attach console to a container:
     sudo container console -n NAME
 
+  * Limit ressources of a container:
+    sudo container limit -n NAME --cpu-quota 10%
+
   * List container on the system:
     sudo container list
 
@@ -49,7 +74,7 @@ systemd-nspawn.
     container version
 
 
-4. Links
+6. Links
 --------
 
   * 2016-02-24: Systemd vs. Docker
@@ -74,7 +99,7 @@ systemd-nspawn.
     https://lwn.net/Articles/531114/
 
 
-5. Authors
+7. Authors
 ----------
 
   * Daniel Baumann <daniel.baumann@open-infrastructure.net>

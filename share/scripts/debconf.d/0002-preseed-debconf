@@ -1,0 +1,80 @@
+#!/bin/sh
+
+# container-tools - Manage systemd-nspawn containers
+# Copyright (C) 2014-2016 Daniel Baumann <daniel.baumann@open-infrastructure.net>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+set -e
+
+if [ -e "${DEBCONF_TMPDIR}/debconf.default" ]
+then
+	. "${DEBCONF_TMPDIR}/debconf.default"
+fi
+
+if [ -z "${PRESEED_FILE}" ]
+then
+	# user has not specified or selected any preseed files
+	exit 0
+fi
+
+# user has one or more preseed file specified through commandline option
+# or debconf selection dialog.
+PRESEED_FILES="$(echo ${PRESEED_FILE} | sed -e 's|,| |g')"
+
+DEBCONF_PRESEED_FILES=""
+
+for PRESEED_FILE in ${PRESEED_FILES}
+do
+	if [ ! -e "${PRESEED_FILE}" ]
+	then
+		# preseed file does not exist
+		echo "W: ${PRESEED_FILE}: No such file."
+
+		continue
+	fi
+
+	# add preseed file to debconf
+	DEBCONF_PRESEED_FILES="${DEBCONF_PRESEED_FILES} ${PRESEED_FILE}"
+
+	if ! grep -qs '^ *container-tools *cnt-debconf/include-preseed-files' "${PRESEED_FILE}"
+	then
+		# preseed file has no includes
+		continue
+	fi
+
+	# preseed file has includes
+	INCLUDE_PRESEED_FILES="$(grep '^ *container-tools *cnt-debconf/include-preseed-files' ${PRESEED_FILE} | awk '{ $1=$2=$3=""; print $0 }' | sed -e 's|,| |g')"
+
+	# FIXME: we're supporting only *ONE* include layer for now, so no nested/recursive includes just yet
+	for FILE in ${INCLUDE_PRESEED_FILES}
+	do
+		if [ -e "${FILE}" ]
+		then
+			DEBCONF_PRESEED_FILES="${FILE} ${DEBCONF_PRESEED_FILES}"
+		else
+			# included preseed file does not exist
+			echo "W: ${INCLUDE_PRESEED_FILE}: No such file - included from ${PRESEED_FILE}"
+		fi
+	done
+done
+
+for DEBCONF_PRESEED_FILE in ${DEBCONF_PRESEED_FILES}
+do
+	# Apply user specified preseed files
+	debconf-set-selections "${DEBCONF_PRESEED_FILE}"
+done
+
+# Write expanded list of debconf preseed files
+echo "PRESEED_FILE=\"${DEBCONF_PRESEED_FILES}\"" >> "${DEBCONF_TMPDIR}/debconf.default"

@@ -1,4 +1,4 @@
-// Open Infrastructure: container-tools
+// container-tools - Manage systemd-nspawn containers
 // Copyright (C) 2014-2016 Daniel Baumann <daniel.baumann@open-infrastructure.net>
 //
 // This program is free software: you can redistribute it and/or modify

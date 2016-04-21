@@ -1,11 +1,24 @@
 # container-tools: @NAME@
 
 [start]
+cnt.autostart=@CNT_AUTOSTART@
 bind=@BIND@
 boot=@BOOT@
+capability=@CAPABILITY@
 directory=@DIRECTORY@
+drop-capability=@DROP_CAPABILITY@
 machine=@MACHINE@
 network-veth=@NETWORK_VETH@
 network-bridge=@NETWORK_BRIDGE@
 link-journal=@LINK_JOURNAL@
 register=@REGISTER@
+
+[limit]
+BlockIODeviceWeight=
+BlockIOReadBandwidth=
+BlockIOWeight=
+BlockIOWriteBandwidth=
+CPUQuota=
+CPUShares=
+MemoryLimit=
+TasksMax=

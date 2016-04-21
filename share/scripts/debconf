@@ -1,0 +1,974 @@
+#!/bin/sh
+
+# container-tools - Manage systemd-nspawn containers
+# Copyright (C) 2014-2016 Daniel Baumann <daniel.baumann@open-infrastructure.net>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+set -e
+
+SCRIPT="${0}"
+
+CONFIG="/etc/container-tools/config"
+MACHINES="/var/lib/machines"
+
+Parameters ()
+{
+	LONG_OPTIONS="bind:,script:,name:,preseed-file:"
+	OPTIONS="b:,s:,n:,p:"
+
+	PARAMETERS="$(getopt --longoptions ${LONG_OPTIONS} --name=${SCRIPT} --options ${OPTIONS} --shell sh -- ${@})"
+
+	if [ "${?}" != "0" ]
+	then
+		echo "'${SCRIPT}': getopt exit" >&2
+		exit 1
+	fi
+
+	eval set -- "${PARAMETERS}"
+
+	while true
+	do
+		case "${1}" in
+			-b|--bind)
+				# ignore
+				shift 2
+				;;
+
+			--cnt.autostart)
+				# ignore
+				shift 2
+				;;
+
+			-s|--script)
+				# ignore
+				shift 2
+				;;
+
+			-n|--name)
+				NAME="${2}"
+				shift 2
+				;;
+
+			--preseed-file)
+				PRESEED_FILE="${2}"
+				shift 2
+				;;
+
+			--)
+				shift 1
+				break
+				;;
+
+			*)
+				echo "'${SCRIPT}': getopt error" >&2
+				exit 1
+				;;
+		esac
+	done
+}
+
+Usage ()
+{
+	echo "Usage: container create -n|--name NAME -s|--script ${SCRIPT} [-p|--preseed-file FILE]" >&2
+	exit 1
+}
+
+Parameters "${@}"
+
+if [ -z "${NAME}" ]
+then
+	Usage
+fi
+
+if [ -e "${MACHINES}/${NAME}" ]
+then
+	echo "'${NAME}': container already exists" >&2
+	exit 1
+fi
+
+if [ ! -x /usr/sbin/debootstrap ]
+then
+	echo "'${NAME}': /usr/sbin/debootstrap - no such file." >&2
+	exit 1
+fi
+
+if [ "$(id -u)" -ne 0 ]
+then
+	echo "'${NAME}': need root privileges" >&2
+	exit 1
+fi
+
+Chroot ()
+{
+	CHROOT="${1}"
+	shift
+
+	chroot "${CHROOT}" /usr/bin/env -i \
+		LC_ALL="C" PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/games:/usr/games" TERM="${TERM}" \
+		DEBIAN_FRONTEND="${DEBCONF_FRONTEND}" DEBIAN_PRIORITY="${DEBCONF_PRIORITY}" \
+		DEBCONF_NONINTERACTIVE_SEEN="true" DEBCONF_NOWARNINGS="true" \
+		ftp_proxy="${ftp_proxy}" http_proxy="${http_proxy}" \
+		${@}
+}
+
+Upgrade_system ()
+{
+	DIRECTORY="${1}"
+
+	# Mount pseudo-filesystems
+	mount -o bind /dev/pts "${DIRECTORY}/dev/pts"
+	mount -o bind /proc "${DIRECTORY}/proc"
+	mount -o bind /sys "${DIRECTORY}/sys"
+
+	# Bind mount systems apt cache
+	mount -o bind /var/cache/apt/archives "${DIRECTORY}/var/cache/apt/archives"
+
+	# Disable dpkg syncing
+
+cat > "${DIRECTORY}/etc/dpkg/dpkg.cfg.d/container-tools" << EOF
+force-unsafe-io
+EOF
+
+	# Create policy-rc.d file
+
+cat > "${DIRECTORY}/usr/sbin/policy-rc.d" << EOF
+#!/bin/sh
+echo "All runlevel operations denied by policy" >&2
+exit 101
+EOF
+
+	chmod 0755 "${DIRECTORY}/usr/sbin/policy-rc.d"
+
+	# Upgrade system
+	Chroot "${DIRECTORY}" "apt-get update"
+	Chroot "${DIRECTORY}" "apt-get --yes --option APT::Force-LoopBreak=true upgrade"
+	Chroot "${DIRECTORY}" "apt-get --yes --option APT::Force-LoopBreak=true dist-upgrade"
+
+	# Unmount systems apt cache
+	umount "${DIRECTORY}/var/cache/apt/archives"
+
+	Chroot "${DIRECTORY}" "apt-get clean"
+}
+
+Cleanup_system ()
+{
+	DIRECTORY="${1}"
+
+	Chroot "${DIRECTORY}" "apt-get --yes autoremove"
+	Chroot "${DIRECTORY}" "apt-get clean"
+
+	# Cleanup
+	rm -f "${DIRECTORY}/etc/dpkg/dpkg.cfg.d/container-tools"
+	rm -f "${DIRECTORY}/usr/sbin/policy-rc.d"
+
+	# Unmount pseudo-filesystems
+	umount "${DIRECTORY}/dev/pts"
+	umount "${DIRECTORY}/proc"
+	umount "${DIRECTORY}/sys"
+}
+
+Debconf ()
+{
+	# Configure local debconf
+	mkdir -p /tmp/container-tools
+	DEBCONF_TMPDIR="$(mktemp -d -p /tmp/container-tools -t $(basename ${0}).XXXX)"
+	export DEBCONF_TMPDIR
+
+	mkdir -p "${DEBCONF_TMPDIR}/debconf"
+
+cat > "${DEBCONF_TMPDIR}/debconf.systemrc" << EOF
+Config: configdb
+Templates: templatedb
+
+Name: config
+Driver: File
+Mode: 644
+Reject-Type: password
+Filename: ${DEBCONF_TMPDIR}/debconf/config.dat
+
+Name: passwords
+Driver: File
+Mode: 600
+Backup: false
+Required: false
+Accept-Type: password
+Filename: ${DEBCONF_TMPDIR}/debconf/passwords.dat
+
+Name: configdb
+Driver: Stack
+Stack: config, passwords
+
+Name: templatedb
+Driver: File
+Mode: 644
+Filename: ${DEBCONF_TMPDIR}/debconf/templates.dat
+EOF
+
+	DEBCONF_SYSTEMRC="${DEBCONF_TMPDIR}/debconf.systemrc"
+	export DEBCONF_SYSTEMRC
+}
+
+Debootstrap ()
+{
+	DIRECTORY="${1}"
+
+	# FIXME: trim down, debootstrap variants?
+	case "${MODE}" in
+		debian)
+			INCLUDE="--include=ifupdown,locales,libui-dialog-perl,dialog,isc-dhcp-client,netbase,net-tools,iproute,wget,dbus"
+			;;
+
+		progress-linux)
+			INCLUDE="--include=apt-utils,ifupdown,locales-all,libui-dialog-perl,dialog,isc-dhcp-client,netbase,net-tools,iproute,openssh-server,wget,dbus,libpam-systemd"
+			;;
+	esac
+
+	mkdir -p "$(dirname ${DIRECTORY})"
+	debootstrap --verbose --arch=${ARCHITECTURE} --components=${PARENT_ARCHIVE_AREAS} ${INCLUDE} \
+		${PARENT_DISTRIBUTION} "${DIRECTORY}" ${PARENT_MIRROR}
+}
+
+Configure_apt ()
+{
+	DIRECTORY="${1}"
+
+	# Configure apt
+	rm -f "${DIRECTORY}/etc/apt/sources.list"
+
+	PARENT_AREA="$(echo ${PARENT_ARCHIVE_AREAS} | sed -e 's|,| |g')"
+	PARENT_DIST="$(echo ${PARENT_DISTRIBUTION} | sed -e 's|-backports||')"
+
+	echo "deb ${PARENT_MIRROR} ${PARENT_DIST} ${PARENT_AREA}" > "${DIRECTORY}/etc/apt/sources.list.d/debian.list"
+
+	case "${MODE}" in
+		progress-linux)
+			AREA="$(echo ${ARCHIVE_AREAS} | sed -e 's|,| |g')"
+			DIST="$(echo ${DISTRIBUTION} | sed -e 's|-backports||')"
+
+			echo "deb ${MIRROR} ${DIST} ${AREA}" > "${DIRECTORY}/etc/apt/sources.list.d/progress-linux.list"
+
+			case "${DISTRIBUTION}" in
+				*-backports)
+					echo "deb ${MIRROR} ${DIST}-backports ${AREA}" >> "${DIRECTORY}/etc/apt/sources.list.d/progress-linux.list"
+					;;
+			esac
+
+cat > "${DIRECTORY}/etc/apt/preferences.d/progress-linux.pref" << EOF
+Package: *
+Pin: release n=${DIST}
+Pin-Priority: 999
+
+Package: *
+Pin: release n=${DIST}-security
+Pin-Priority: 999
+
+Package: *
+Pin: release n=${DIST}-updates
+Pin-Priority: 999
+
+Package: *
+Pin: release n=${DIST}-lts
+Pin-Priority: 999
+
+Package: *
+Pin: release n=${DIST}-extras
+Pin-Priority: 999
+EOF
+			case "${DISTRIBUTION}" in
+				*-backports)
+
+cat >> "${DIRECTORY}/etc/apt/preferences.d/progress-linux.pref" << EOF
+
+Package: *
+Pin: release n=${DIST}-backports
+Pin-Priority: 999
+
+Package: *
+Pin: release n=${DIST}-backports-extras
+Pin-Priority: 999
+EOF
+
+					;;
+
+				*)
+
+cat >> "${DIRECTORY}/etc/apt/preferences.d/progress-linux.pref" << EOF
+
+#Package: *
+#Pin: release n=${DIST}-backports
+#Pin-Priority: 999
+
+#Package: *
+#Pin: release n=${DIST}-backports-extras
+#Pin-Priority: 999
+EOF
+
+					;;
+			esac
+
+			# Import archive keys
+			case "${DISTRIBUTION}" in
+				*-backports)
+					KEYS="project/pgp/archive-key-${DIST}.asc project/pgp/archive-key-${DIST}-backports.asc"
+					;;
+
+				*)
+					KEYS="project/pgp/archive-key-${DIST}.asc"
+					;;
+			esac
+
+			for KEY in ${KEYS}
+			do
+				KEY_NAME="$(basename ${KEY})"
+				echo "P: Fetching archive-key ${KEY_NAME}..."
+
+				wget -q "${MIRROR}/${KEY}" -O "${DIRECTORY}/key.asc"
+				wget -q "${MIRROR}/${KEY}.sig" -O "${DIRECTORY}/key.asc.sig"
+
+				if [ -e /usr/bin/gpgv ]
+				then
+					if [ -e /usr/share/keyrings/debian-keyring.gpg ] || [ -e /usr/share/keyrings/debian-maintainers.gpg ]
+					then
+						KEY_VALID=""
+
+						for KEYRING in /usr/share/keyrings/debian-keyring.gpg /usr/share/keyrings/debian-maintainers.gpg
+						do
+							if [ -e "${KEYRING}" ]
+							then
+								echo -n "I: Verifying archive-key ${KEY_NAME} against $(basename ${KEYRING} .gpg | sed -e 's|-keyring||') keyring..."
+
+								# FIXME: doesn't work anymore when the template eventually be run with 'set -e'
+								/usr/bin/gpgv --quiet --keyring ${KEYRING} "${DIRECTORY}/key.asc.sig" "${DIRECTORY}/key.asc" > /dev/null 2>&1 && KEY_VALID="true" && break
+							fi
+						done
+
+						case "${KEY_VALID}" in
+							true)
+								echo " successful."
+								;;
+
+							*)
+								echo " failed."
+								return 1
+								;;
+						esac
+					else
+						echo "W: Skipping archive-key ${KEY_NAME} verification, debian-keyring not available..."
+					fi
+				else
+					echo "W: Skipping archive-key ${KEY_NAME} verification, gpgv not available..."
+				fi
+
+				echo "P: Importing archive-key ${KEY_NAME}..."
+
+				Chroot "${DIRECTORY}" "apt-key add key.asc"
+				rm -f "${DIRECTORY}/key.asc"
+				rm -f "${DIRECTORY}/key.asc.sig"
+			done
+
+			Chroot "${DIRECTORY}" "apt-get update"
+			;;
+	esac
+}
+
+Deconfigure_system ()
+{
+	DIRECTORY="${1}"
+
+	# Configure fstab
+
+cat > "${DIRECTORY}/etc/fstab" << EOF
+# /etc/fstab: static file system information.
+#
+# Use 'blkid' to print the universally unique identifier for a
+# device; this may be used with UUID= as a more robust way to name devices
+# that works even if disks are added and removed. See fstab(5).
+#
+# <file system> <mount point>   <type>  <options>       <dump>  <pass>
+
+EOF
+
+	# Fix /etc/mtab
+	rm -f "${DIRECTORY}/etc/mtab"
+	ln -s /proc/self/mounts "${DIRECTORY}/etc/mtab"
+
+	# Temporary hack for dpkg
+	if [ -e "${DIRECTORY}/etc/dpkg/origins/default" ]
+	then
+		rm -f "${DIRECTORY}/etc/dpkg/origins/default"
+		Chroot "${DIRECTORY}" "dpkg-reconfigure base-files"
+	fi
+
+	# Temporary hack for base-files
+	for FILE in motd.tail motd profile
+	do
+		if [ -e "${DIRECTORY}/usr/share/base-files/${FILE}" ]
+		then
+			rm -f "${DIRECTORY}/etc/${FILE}"
+			cp "${DIRECTORY}/usr/share/base-files/${FILE}" "${DIRECTORY}/etc"
+		fi
+	done
+
+	# Temporary hack for readline
+	if [ -e "${DIRECTORY}/etc/inputrc" ]
+	then
+		rm -f "${DIRECTORY}/etc/inputrc"
+		cp "${DIRECTORY}/usr/share/readline/inputrc" "${DIRECTORY}/etc"
+	fi
+
+	# Temporary hack for sysvinit
+	if [ -e "${DIRECTORY}/etc/inittab" ]
+	then
+		rm -f "${DIRECTORY}/etc/inittab"
+		cp "${DIRECTORY}/usr/share/sysvinit/inittab" "${DIRECTORY}/etc/inittab"
+	fi
+
+	# Removing resolv.conf
+	#rm -f "${DIRECTORY}/etc/resolv.conf"
+	# FIXME: needs to stay for the moment
+	rm -f "${DIRECTORY}/etc/resolv.conf"
+	cp /etc/resolv.conf "${DIRECTORY}/etc"
+
+	# Removing hosts/hostname
+	rm -f "${DIRECTORY}"/etc/hosts
+	rm -f "${DIRECTORY}"/etc/hostname
+
+	# Removing openssh-server host keys
+	rm -f "${DIRECTORY}"/etc/ssh/ssh_host_*_key
+	rm -f "${DIRECTORY}"/etc/ssh/ssh_host_*_key.pub
+}
+
+Configure_system ()
+{
+	DIRECTORY="${1}"
+
+	# Overwrite resolv.conf from cache with hosts resolv.conf
+	rm -f "${DIRECTORY}/etc/resolv.conf"
+	cp /etc/resolv.conf "${DIRECTORY}/etc"
+
+	echo "${NAME}" > "${DIRECTORY}/etc/hostname"
+
+	# Configure apt
+	rm -f "${DIRECTORY}/etc/apt/sources.list"
+
+	PARENT_AREA="$(echo ${PARENT_ARCHIVE_AREAS} | sed -e 's|,| |g')"
+	PARENT_DIST="$(echo ${PARENT_DISTRIBUTION} | sed -e 's|-backports||')"
+
+	echo "deb ${PARENT_MIRROR} ${PARENT_DIST} ${PARENT_AREA}" > "${DIRECTORY}/etc/apt/sources.list.d/debian.list"
+
+	for PARENT_REPO in ${PARENT_ARCHIVES}
+	do
+		case "${PARENT_REPO}" in
+			${PARENT_DIST}-security)
+				echo "deb ${PARENT_MIRROR_SECURITY} ${PARENT_DIST}/updates ${PARENT_AREA}" >> "${DIRECTORY}/etc/apt/sources.list.d/debian.list"
+				;;
+
+			${PARENT_DIST}-updates)
+				echo "deb ${PARENT_MIRROR} ${PARENT_DIST}-updates ${PARENT_AREA}" >> "${DIRECTORY}/etc/apt/sources.list.d/debian.list"
+				;;
+
+			${PARENT_DIST}-lts)
+				echo "deb ${PARENT_MIRROR} ${PARENT_DIST}-lts ${PARENT_AREA}" >> "${DIRECTORY}/etc/apt/sources.list.d/debian.list"
+				;;
+
+			${PARENT_DIST}-backports)
+				echo "deb ${PARENT_MIRROR} ${PARENT_DIST}-backports ${PARENT_AREA}" >> "${DIRECTORY}/etc/apt/sources.list.d/debian.list"
+				;;
+
+			${PARENT_DIST}-proposed-updates)
+				echo "deb ${PARENT_MIRROR} ${PARENT_DIST}-proposed-updates ${PARENT_AREA}" >> "${DIRECTORY}/etc/apt/sources.list.d/debian.list"
+				;;
+
+			experimental)
+				echo "deb ${PARENT_MIRROR} experimental ${PARENT_AREA}" >> "${DIRECTORY}/etc/apt/sources.list.d/debian.list"
+				;;
+		esac
+	done
+
+	case "${MODE}" in
+		progress-linux)
+			AREA="$(echo ${ARCHIVE_AREAS} | sed -e 's|,| |g')"
+			DIST="$(echo ${DISTRIBUTION} | sed -e 's|-backports||')"
+
+			echo "deb ${MIRROR} ${DIST} ${AREA}" > "${DIRECTORY}/etc/apt/sources.list.d/progress-linux.list"
+
+			for REPO in ${ARCHIVES}
+			do
+				case "${REPO}" in
+					${DIST}-staging)
+						echo "deb ${MIRROR} ${DIST}-staging ${AREA}" >> "${DIRECTORY}/etc/apt/sources.list.d/progress-linux.list"
+						;;
+
+					${DIST}-security)
+						echo "deb ${MIRROR_SECURITY} ${DIST}-security ${AREA}" >> "${DIRECTORY}/etc/apt/sources.list.d/progress-linux.list"
+						;;
+
+					${DIST}-security-staging)
+						echo "deb ${MIRROR_SECURITY} ${DIST}-security-staging ${AREA}" >> "${DIRECTORY}/etc/apt/sources.list.d/progress-linux.list"
+						;;
+
+					${DIST}-updates)
+						echo "deb ${MIRROR} ${DIST}-updates ${AREA}" >> "${DIRECTORY}/etc/apt/sources.list.d/progress-linux.list"
+						;;
+
+					${DIST}-updates-staging)
+						echo "deb ${MIRROR} ${DIST}-updates-staging ${AREA}" >> "${DIRECTORY}/etc/apt/sources.list.d/progress-linux.list"
+						;;
+
+					${DIST}-lts)
+						echo "deb ${MIRROR} ${DIST}-lts ${AREA}" >> "${DIRECTORY}/etc/apt/sources.list.d/progress-linux.list"
+						;;
+
+					${DIST}-lts-staging)
+						echo "deb ${MIRROR} ${DIST}-lts-staging ${AREA}" >> "${DIRECTORY}/etc/apt/sources.list.d/progress-linux.list"
+						;;
+
+					${DIST}-extras)
+						echo "deb ${MIRROR} ${DIST}-extras ${AREA}" >> "${DIRECTORY}/etc/apt/sources.list.d/progress-linux.list"
+						;;
+
+					${DIST}-extras-staging)
+						echo "deb ${MIRROR} ${DIST}-extras-staging ${AREA}" >> "${DIRECTORY}/etc/apt/sources.list.d/progress-linux.list"
+						;;
+
+					${DIST}-backports)
+						echo "deb ${MIRROR} ${DIST}-backports ${AREA}" >> "${DIRECTORY}/etc/apt/sources.list.d/progress-linux.list"
+						;;
+
+					${DIST}-backports-staging)
+						echo "deb ${MIRROR} ${DIST}-backports-staging ${AREA}" >> "${DIRECTORY}/etc/apt/sources.list.d/progress-linux.list"
+						;;
+
+					${DIST}-backports-extras)
+						echo "deb ${MIRROR} ${DIST}-backports-extras ${AREA}" >> "${DIRECTORY}/etc/apt/sources.list.d/progress-linux.list"
+						;;
+
+					${DIST}-backports-extras-staging)
+						echo "deb ${MIRROR} ${DIST}-backports-extras-staging ${AREA}" >> "${DIRECTORY}/etc/apt/sources.list.d/progress-linux.list"
+						;;
+				esac
+			done
+			;;
+	esac
+
+	if [ "${APT_RECOMMENDS}" = "false" ]
+	then
+
+cat > "${DIRECTORY}/etc/apt/apt.conf.d/recommends.conf" << EOF
+APT::Install-Recommends "false";
+EOF
+
+	fi
+
+	# Add local archives configured from preseed file
+	if ls "${DEBCONF_TMPDIR}/apt"/*.list > /dev/null 2>&1
+	then
+		cp "${DEBCONF_TMPDIR}/apt"/*.list "${DIRECTORY}/etc/apt/sources.list.d"
+
+		if ls "${DEBCONF_TMPDIR}/apt"/*.key > /dev/null 2>&1
+		then
+			for KEY in "${DEBCONF_TMPDIR}/apt"/*.key
+			do
+				cp "${KEY}" "${DIRECTORY}"
+				Chroot "${DIRECTORY}" "apt-key add $(basename ${KEY})"
+				rm -f "${DIRECTORY}/$(basename ${KEY})"
+			done
+		fi
+
+		if ls "${DEBCONF_TMPDIR}/apt"/*.pref > /dev/null 2>&1
+		then
+			cp "${DEBCONF_TMPDIR}/apt"/*.pref "${DIRECTORY}/etc/apt/preferences.d"
+		fi
+	fi
+
+	Upgrade_system "${DIRECTORY}"
+
+	# Preseed system
+	if [ -n "${PRESEED_FILE}" ]
+	then
+		for FILE in ${PRESEED_FILE}
+		do
+			cat "${FILE}" >> "${DIRECTORY}/preseed.cfg"
+		done
+
+		Chroot "${DIRECTORY}" "debconf-set-selections preseed.cfg"
+
+		rm -f "${DIRECTORY}/preseed.cfg"
+	fi
+
+	# FIXME: All packages of priority of essential need to be reconfigured to reflect choices from preseeding
+	# -> fix: use two-stage bootstrap (foreign) and inject preseeds in between
+
+	# Manual hack to workaround broken preseeding in locales package
+	if [ -n "${PRESEED_FILE}" ]
+	then
+		for FILE in ${PRESEED_FILE}
+		do
+			if grep -qs locales "${FILE}"
+			then
+				if [ -e "${DIRECTORY}/var/lib/dpkg/info/locales.list" ]
+				then
+					rm -f "${DIRECTORY}/etc/default/locale" "${DIRECTORY}/etc/locale.gen"
+					Chroot "${DIRECTORY}" "DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=criticial dpkg-reconfigure locales"
+
+					break
+				fi
+			fi
+		done
+	fi
+
+	# Manual hack to create conffiles when using locales-all instead of locales
+	if [ ! -e "${DIRECTORY}/etc/environment" ]
+	then
+		echo "LANG=C.UTF-8" >> "${DIRECTORY}/etc/environment"
+	fi
+
+	if [ ! -e "${DIRECTORY}/etc/default/locale" ]
+	then
+		echo "LANG=C.UTF-8" >> "${DIRECTORY}/etc/default/locale"
+	fi
+
+	# Manual hack to workaround broken preseeding in tzdata package
+	if [ -n "${PRESEED_FILE}" ]
+	then
+		for FILE in ${PRESEED_FILE}
+		do
+			if grep -qs tzdata "${FILE}"
+			then
+				rm -f "${DIRECTORY}/etc/timezone"
+				Chroot "${DIRECTORY}" "DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=criticial dpkg-reconfigure tzdata"
+
+				break
+			fi
+		done
+	fi
+
+	# Temporary hack for base-files (base-files gets upgraded, so run it second time)
+	for FILE in motd.tail motd profile
+	do
+		if [ -e "${DIRECTORY}/usr/share/base-files/${FILE}" ]
+		then
+			rm -f "${DIRECTORY}/etc/${FILE}"
+			cp "${DIRECTORY}/usr/share/base-files/${FILE}" "${DIRECTORY}/etc"
+		fi
+	done
+
+	rm -f "${DIRECTORY}/preseed.cfg"
+
+	# FIXME: Install additional packages after lxc-support has been run.
+	# This is suboptimal, ideally we should install all packages but not run the maintainer scripts,
+	# then run lxc-support, and run the maintainer scripts. This way, lxc-support would see
+	# all the installed packages and could skip those scripts entirely when a certain package is not
+	# installed. Unfortunately, that is not possible in any reasonable way with apt-get.
+	# FTR: The only known workaround for now would be to first apt-get install --download-only all
+	# packages, then unpack them with dpkg, run lxc-support, and dpkg --configure them.
+	# For the time being, it's better to have lxc-support see no packages at all and be run before
+	# packages are installed, than the other way around.
+	# Workaround: We're running lxc-support at the end of the template again.
+	if [ -n "${PACKAGES}" ]
+	then
+		case "${DEBCONF_FRONTEND}" in
+			noninteractive)
+				Chroot "${DIRECTORY}" apt-get --option APT::Force-LoopBreak=true --option Dpkg::Options::="--force-overwrite" --option Dpkg::Options::="--force-confold" --yes install ${PACKAGES}
+				;;
+
+			*)
+				Chroot "${DIRECTORY}" "apt-get --option APT::Force-LoopBreak=true --yes install ${PACKAGES}"
+				;;
+		esac
+	fi
+
+	# Manual hack to regenerate ssh keys
+	if [ -e "${DIRECTORY}/var/lib/dpkg/info/openssh-server.postinst" ] && \
+	   ! ls "${DIRECTORY}"/etc/ssh/ssh_host_*_key > /dev/null 2>&1
+	then
+		Chroot "${DIRECTORY}" "DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=criticial dpkg-reconfigure openssh-server"
+	fi
+
+	# container command
+	if [ -n "${CONTAINER_COMMAND}" ]
+	then
+		echo "${CONTAINER_COMMAND}" > "${DIRECTORY}/.container-command"
+
+		chmod 0755 "sh /.container-command"
+		Chroot "${DIRECTORY}" "sh /.container-command"
+
+		rm -f "${DIRECTORY}/.container-command"
+	fi
+
+}
+
+Configure_network ()
+{
+	# Create /etc/network/interfaces
+
+	DIRECTORY="${1}"
+
+cat > "${DIRECTORY}/etc/network/interfaces.tmp" << EOF
+# Used by ifup(8) and ifdown(8). See the interfaces(5) manpage or
+# /usr/share/doc/ifupdown/examples for more information.
+EOF
+
+	for NUMBER in $(seq 0 ${NETWORK_NUMBER})
+	do
+		eval IPV4_COMMENT="$`echo NETWORK${NUMBER}_IPV4_COMMENT`"
+		eval IPV4_METHOD="$`echo NETWORK${NUMBER}_IPV4_METHOD`"
+		eval IPV4_ADDRESS="$`echo NETWORK${NUMBER}_IPV4_ADDRESS`"
+		eval IPV4_BROADCAST="$`echo NETWORK${NUMBER}_IPV4_BROADCAST`"
+		eval IPV4_GATEWAY="$`echo NETWORK${NUMBER}_IPV4_GATEWAY`"
+		eval IPV4_NETMASK="$`echo NETWORK${NUMBER}_IPV4_NETMASK`"
+		eval IPV4_NETWORK="$`echo NETWORK${NUMBER}_IPV4_NETWORK`"
+		eval IPV4_POST_UP="$`echo NETWORK${NUMBER}_IPV4_POST_UP`"
+		eval IPV4_POST_DOWN="$`echo NETWORK${NUMBER}_IPV4_POST_DOWN`"
+
+		if [ -z "${IPV4_METHOD}" ]
+		then
+			continue
+		fi
+
+		echo >> "${DIRECTORY}/etc/network/interfaces.tmp"
+
+		if [ -n "${IPV4_COMMENT}" ]
+		then
+			echo "# ${IPV4_COMMENT}" >> "${DIRECTORY}/etc/network/interfaces.tmp"
+		fi
+
+		case "${IPV4_METHOD}" in
+			none)
+
+cat >> "${DIRECTORY}/etc/network/interfaces.tmp" << EOF
+iface host${NUMBER} inet manual
+EOF
+
+				;;
+
+			dhcp)
+
+cat >> "${DIRECTORY}/etc/network/interfaces.tmp" << EOF
+auto host${NUMBER}
+iface host${NUMBER} inet dhcp
+EOF
+
+				;;
+
+			static)
+
+cat >> "${DIRECTORY}/etc/network/interfaces.tmp" << EOF
+auto host${NUMBER}
+iface host${NUMBER} inet static
+	address		${IPV4_ADDRESS}
+EOF
+
+				if [ -n "${IPV4_BROADCAST}" ]
+				then
+					echo "	broadcast	${IPV4_BROADCAST}" >> "${DIRECTORY}/etc/network/interfaces.tmp"
+				fi
+
+				if [ -n "${IPV4_GATEWAY}" ]
+				then
+					echo "	gateway		${IPV4_GATEWAY}" >> "${DIRECTORY}/etc/network/interfaces.tmp"
+				fi
+
+				if [ -n "${IPV4_NETMASK}" ]
+				then
+					echo "	netmask		${IPV4_NETMASK}" >> "${DIRECTORY}/etc/network/interfaces.tmp"
+				fi
+
+				if [ -n "${IPV4_NETWORK}" ]
+				then
+					echo "	network		${IPV4_NETWORK}" >> "${DIRECTORY}/etc/network/interfaces.tmp"
+				fi
+
+				if [ -n "${IPV4_POST_UP}" ]
+				then
+					echo "	post-up		${IPV4_POST_UP}" >> "${DIRECTORY}/etc/network/interfaces.tmp"
+				fi
+
+				if [ -n "${IPV4_POST_DOWN}" ]
+				then
+					echo "	post-down	${IPV4_POST_DOWN}" >> "${DIRECTORY}/etc/network/interfaces.tmp"
+				fi
+				;;
+		esac
+
+		NUMBER="$((${NUMBER} + 1))"
+	done
+
+	mv "${DIRECTORY}/etc/network/interfaces.tmp" "${DIRECTORY}/etc/network/interfaces"
+
+	# create /etc/resolv.conf
+	rm -f "${DIRECTORY}/etc/resolv.conf.tmp"
+
+	if [ -n "${NAMESERVER_DOMAIN}" ]
+	then
+		echo "domain ${NAMESERVER_DOMAIN}" >> "${DIRECTORY}/etc/resolv.conf.tmp"
+	fi
+
+	if [ -n "${NAMESERVER_SEARCH}" ]
+	then
+		echo "search ${NAMESERVER_SEARCH}" >> "${DIRECTORY}/etc/resolv.conf.tmp"
+	fi
+
+	if [ -n "${NAMESERVER_SERVER}" ]
+	then
+		if [ -e "${DIRECTORY}/etc/resolv.conf.tmp" ]
+		then
+			echo "" >> "${DIRECTORY}/etc/resolv.conf.tmp"
+		fi
+
+		for NAMESERVER in $(echo ${NAMESERVER_SERVER} | sed -e 's|,| |g')
+		do
+			echo "nameserver ${NAMESERVER}" >> "${DIRECTORY}/etc/resolv.conf.tmp"
+		done
+	fi
+
+	if [ -n "${NAMESERVER_OPTIONS}" ]
+	then
+		if [ -e "${DIRECTORY}/etc/resolv.conf.tmp" ]
+		then
+			echo "" >> "${DIRECTORY}/etc/resolv.conf.tmp"
+		fi
+
+		echo "options ${NAMESERVER_OPTIONS}" >> "${DIRECTORY}/etc/resolv.conf.tmp"
+	fi
+
+	if [ -e "${DIRECTORY}/etc/resolv.conf.tmp" ]
+	then
+		mv "${DIRECTORY}/etc/resolv.conf.tmp" "${DIRECTORY}/etc/resolv.conf"
+	fi
+
+	# Create /etc/hosts
+	case "${NETWORK0_IPV4_METHOD}" in
+		none|dhcp)
+
+cat > "${DIRECTORY}/etc/hosts.tmp" << EOF
+127.0.0.1	localhost	${NAME}
+
+# The following lines are desirable for IPv6 capable hosts
+::1	ip6-localhost ip6-loopback
+fe00::0	ip6-localnet
+ff00::0	ip6-mcastprefix
+ff02::1	ip6-allnodes
+ff02::2	ip6-allrouters
+EOF
+
+			;;
+
+		static)
+
+cat > "${DIRECTORY}/etc/hosts.tmp" << EOF
+127.0.0.1	localhost
+${NETWORK0_IPV4_ADDRESS}	${NAME}
+
+# The following lines are desirable for IPv6 capable hosts
+::1	ip6-localhost ip6-loopback
+fe00::0	ip6-localnet
+ff00::0	ip6-mcastprefix
+ff02::1	ip6-allnodes
+ff02::2	ip6-allrouters
+EOF
+
+			;;
+	esac
+
+	mv "${DIRECTORY}/etc/hosts.tmp" "${DIRECTORY}/etc/hosts"
+}
+
+Commands ()
+{
+	DIRECTORY="${1}"
+
+	if [ -n "${HOST_COMMAND}" ]
+	then
+		echo "${HOST_COMMAND}" > "${DIRECTORY}/.host-command"
+
+		cd "${DIRECTORY}"
+		sh "${DIRECTORY}/.host-command"
+		cd "${OLDPWD}"
+
+		rm -f "${DIRECTORY}/.host-command"
+	fi
+
+	# config (FIXME)
+	sed -i -e "s|^network-bridge=.*|network-bridge=${NETWORK0_BRIDGE}|" "${CONFIG}/${NAME}.conf"
+
+	# Setting root password
+	echo root:${ROOT_PASSWORD} | chroot "${DIRECTORY}" chpasswd
+
+	case "${ROOT_RANDOM_PASSWORD}" in
+		true)
+			echo "${NAME}: root password set to '${ROOT_PASSWORD}'."
+			;;
+	esac
+}
+
+umask 0022
+
+# Get distributor from template filename
+MODE="$(basename ${SCRIPT})"
+
+case "${MODE}" in
+	debconf)
+		MODE="debian"
+		;;
+esac
+
+export MODE
+
+CACHE="/var/cache/container-tools/${MODE}"
+SYSTEM="${MACHINES}/${NAME}"
+
+Debconf
+
+# Run debconf parts
+for SCRIPT in /usr/share/container-tools/scripts/debconf.d/*
+do
+	if [ -x "${SCRIPT}" ]
+	then
+		# FIXME
+		# debconf -ocontainer-tools "${SCRIPT}"
+		"${SCRIPT}"
+	fi
+done
+
+# Read-in configuration from debconf
+. "${DEBCONF_TMPDIR}/debconf.default"
+
+## Generic parts
+if [ ! -e "${CACHE}/${DISTRIBUTION}_${ARCHITECTURE}" ]
+then
+	Debootstrap "${CACHE}/${DISTRIBUTION}_${ARCHITECTURE}.tmp"
+	Configure_apt "${CACHE}/${DISTRIBUTION}_${ARCHITECTURE}.tmp"
+	Deconfigure_system "${CACHE}/${DISTRIBUTION}_${ARCHITECTURE}.tmp"
+
+	mv "${CACHE}/${DISTRIBUTION}_${ARCHITECTURE}.tmp" "${CACHE}/${DISTRIBUTION}_${ARCHITECTURE}"
+fi
+
+Upgrade_system "${CACHE}/${DISTRIBUTION}_${ARCHITECTURE}" || echo "W: If upgrading the system failed, try removing the cache for your distribution in /var/cache/container-tools"
+Cleanup_system "${CACHE}/${DISTRIBUTION}_${ARCHITECTURE}"
+
+## Specific parts
+cp -a "${CACHE}/${DISTRIBUTION}_${ARCHITECTURE}" "${MACHINES}/${NAME}"
+
+Configure_system "${MACHINES}/${NAME}"
+Configure_network "${MACHINES}/${NAME}"
+Cleanup_system "${MACHINES}/${NAME}"
+
+Commands "${MACHINES}/${NAME}"
+
+# remove debconf temporary files
+#FIXME
+#echo rm --preserve-root --one-file-system -rf "${DEBCONF_TMPDIR}"
+rmdir --ignore-fail-on-non-empty /tmp/container-tools || true

@@ -1,0 +1,187 @@
+#!/bin/sh
+
+# container-tools - Manage systemd-nspawn containers
+# Copyright (C) 2014-2016 Daniel Baumann <daniel.baumann@open-infrastructure.net>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+set -e
+
+COMMAND="$(basename ${0})"
+
+MACHINES="/var/lib/machines"
+
+Parameters ()
+{
+	LONG_OPTIONS="name:,blockio-device-weight:,blockio-read-bandwith:,blockio-weight:,blockio-write-bandwith:,cpu-quota:,cpu-shares:,memory-limit:,tasks-max:,"
+
+	OPTIONS="n:b:c:m:t:"
+
+	PARAMETERS="$(getopt --longoptions ${LONG_OPTIONS} --name=${COMMAND} --options ${OPTIONS} --shell sh -- ${@})"
+
+	if [ "${?}" != "0" ]
+	then
+		echo "'${COMMAND}': getopt exit" >&2
+		exit 1
+	fi
+
+	eval set -- "${PARAMETERS}"
+
+	while true
+	do
+		case "${1}" in
+			-n|--name)
+				NAME="${2}"
+				shift 2
+				;;
+
+			-c|--cpu-quota)
+				CPU_QUOTA="${2}"
+				shift 2
+				;;
+
+			--cpu-shares)
+				CPU_SHARES="${2}"
+				shift 2
+				;;
+
+			-m|--memory-limit)
+				MEMORY_LIMIT="${2}"
+				shift 2
+				;;
+
+			-t|--tasks-max)
+				TASKS_MAX="${2}"
+				shift 2
+				;;
+
+			--blockio-device-weight)
+				BLOCK_IO_DEVICE_WEIGHT="${2}"
+				shift 2
+				;;
+
+			--blockio-read-bandwith)
+				BLOCK_IO_READ_BANDWITH="${2}"
+				shift 2
+				;;
+
+			-b|--blockio-weight)
+				BLOCK_IO_WEIGHT="${2}"
+				shift 2
+				;;
+
+			--blockio-write-bandwith)
+				BLOCK_IO_WRITE_BANDWITH="${2}"
+				shift 2
+				;;
+
+			--)
+				shift 1
+				break
+				;;
+
+			*)
+				echo "'${COMMAND}': getopt error" >&2
+				exit 1
+				;;
+		esac
+	done
+}
+
+Usage ()
+{
+	echo "Usage: container ${COMMAND} -n|--name NAME [--blockio-device-weight \"DEVICE WEIGHT\"] [--blockio-read-bandwith \"DEVICE BYTES\"] [-b|--blockio-weight WEIGHT] [--blockio-write-bandwith \"DEVICE BYTES\"] [-c|--cpu-quota QUOTA] [--cpu-shares SHARES] [-m|--memory-limit BYTES] [-t|--tasks-max NUMBER]" >&2
+	exit 1
+}
+
+Parameters "${@}"
+
+if [ -z "${NAME}" ]
+then
+	Usage
+fi
+
+if [ ! -e "${MACHINES}/${NAME}" ]
+then
+	echo "'${NAME}': no such container" >&2
+	exit 1
+fi
+
+STATE="$(machinectl show ${NAME} 2>&1 | awk -F= '/^State=/ { print $2 }')"
+
+case "${STATE}" in
+	running)
+		;;
+
+	*)
+		echo "'${NAME}': container is not running" >&2
+		exit 1
+		;;
+esac
+
+if [ -n "${BLOCK_IO_DEVICE_WEIGHT}" ]
+then
+	BLOCK_IO_DEVICE_WEIGHT="BlockIODeviceWeight=${BLOCK_IO_DEVICE_WEIGHT}"
+	SET_PROPERTY="true"
+fi
+
+if [ -n "${BLOCK_IO_READ_BANDWITH}" ]
+then
+	BLOCK_IO_READ_BANDWITH="BlockIOReadBandwidth=${BLOCK_IO_READ_BANDWITH}"
+	SET_PROPERTY="true"
+fi
+
+if [ -n "${BLOCK_IO_WEIGHT}" ]
+then
+	BLOCK_IO_WEIGHT="BlockIOWeight=${BLOCK_IO_WEIGHT}"
+	SET_PROPERTY="true"
+fi
+
+if [ -n "${BLOCK_IO_WRITE_BANDWITH}" ]
+then
+	BLOCK_IO_WRITE_BANDWITH="BlockIOReadBandwidth=${BLOCK_IO_WRITE_BANDWITH}"
+	SET_PROPERTY="true"
+fi
+
+if [ -n "${CPU_QUOTA}" ]
+then
+	CPU_QUOTA="CPUQuota=${CPU_QUOTA}"
+	SET_PROPERTY="true"
+fi
+
+if [ -n "${CPU_SHARES}" ]
+then
+	CPU_SHARES="CPUShares=${CPU_SHARES}"
+	SET_PROPERTY="true"
+fi
+
+if [ -n "${MEMORY_LIMIT}" ]
+then
+	MEMORY_LIMIT="MemoryLimit=${MEMORY_LIMIT}"
+	SET_PROPERTY="true"
+fi
+
+if [ -n "${TASKS_MAX}" ]
+then
+	TASKS_MAX="TasksMax=${TASKS_MAX}"
+	SET_PROPERTY="true"
+fi
+
+if [ "${SET_PROPERTY}" != "true" ]
+then
+	Usage
+fi
+
+# Run
+systemctl --runtime set-property ${NAME} ${BLOCK_IO_DEVICE_WEIGHT} ${BLOCK_IO_READ_BANDWITH} ${BLOCK_IO_WEIGHT} ${BLOCK_IO_WRITE_BANDWITH} ${CPU_QUOTA} ${CPU_SHARES} ${MEMORY_LIMIT} ${TASKS_MAX}

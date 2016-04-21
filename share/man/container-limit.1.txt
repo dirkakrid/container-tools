@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-CONTAINER-CREATE-DEBOOTSTRAP(1)
-===============================
+CONTAINER-STOP(1)
+=================
 :doctype: manpage
 :man manual: Open Infrastructure
 :man source: container-tools
@@ -24,52 +24,64 @@ CONTAINER-CREATE-DEBOOTSTRAP(1)
 
 NAME
 ----
-container-create-debootstrap - Create a basic Debian based container with debootstrap
+container-stop - Limit ressources of a container
 
 
 SYNOPSIS
 --------
-*container create -s debootstrap* ['OPTIONS']
+*container limit* ['OPTIONS']
 
 
 DESCRIPTION
 -----------
-The debootstrap container creation script uses debootstrap(8) to create a Debian based container.
-
-This script creates a pure Debian system with three modificiations:
-
-  * apt cache of packages downloaded during debootstrap is cleaned
-  * hostname is set (container name) in /etc/hostname
-  * root password is set (user specified or 16 random characters)
+The container limit command limits ressources available to a container at runtime.
 
 
 OPTIONS
 -------
-The following script options are available:
+The following container options are available:
 
 *-n, --name='NAME'*::
 	Specify container name.
 
-*-a, --architecture='ARCHITECTURE'*::
-	Specify the Debian architecture, defaults to the host systems architecture.
+*--blockio-device-weight='DEVICE WEIGHT'*::
+	Specify device specific blockio weight, see systemd.resource-control(5).
 
-*-d, --distribution='DISTRIBUTION'*::
-	Specify the Debian distribution, defaults to jessie.
+*--blockio-read-bandwith='DEVICE BYTES'*::
+	Specify device specific blockio read bandwith, see systemd.resource-control(5).
 
-*-m, --mirror='MIRROR'*::
-	Specify the Debian mirror, defaults to http://ftp.debian.org/debian.
+*-b, --blockio-weight='WEIGHT'*::
+	Specify general blockio weight, see systemd.resource-control(5).
 
-*-p, --root-password='PASSWORD'*::
-	Specify the root password, defaults to a random 16 character password.
+*--blockio-write-bandwith='DEVICE BYTES'*::
+	Specify device specific blockio write bandwith, see systemd.resource-control(5).
+
+*-c, --cpu-quota='QUOTA'*::
+	Specify CPU quota, see systemd.resource-control(5).
+
+*--cpu-shares='SHARES'*::
+	Specify CPU shares, see systemd.resource-control(5).
+
+*-m, --memory-limit='BYTES'*::
+	Specify memory limit, see systemd.resource-control(5).
+
+*-t, --tasks-max='NUMBER'*::
+	Specify tasks max, see systemd.resource-control(5).
 
 
 EXAMPLES
 --------
-*Create a Debian 8 (jessie) based container with same architecture as the host system:*::
-	sudo container create -s debootstrap -n jessie.example.net
+*Set blockio weight for the example.net container:*::
+	sudo container limit -n example.net --blockio-weight 100
 
-*Create a Debian 8 (jessie) based container with different architecture as the host system:*::
-	sudo container create -s debootstrap -n jessie-i386.example.net -- -a i386
+*Set CPU quota for the example.net container:*::
+	sudo container limit -n example.net --cpu-quota 10%
+
+*Set memory limit for the example.net container to 1GB:*::
+	sudo container limit -n example.net --memory-limit 1G
+
+*Set tasks max for the example.net container to 100:*::
+	sudo container limit -n example.net --tasks-max 100
 
 
 SEE ALSO

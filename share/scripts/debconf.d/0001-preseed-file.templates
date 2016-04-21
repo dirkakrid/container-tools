@@ -1,0 +1,17 @@
+Template: cnt-debconf/title
+Type: title
+Description: container-tools
+
+Template: cnt-debconf/preseed-files
+Type: select
+Default: none
+Choices: ${CHOICES}
+Description: Choose a preseed config, enter a custom one, or use no preseed file at all.
+
+Template: cnt-debconf/preseed-file
+Type: string
+Default:
+Description: Enter (optional) preseed file to use:
+ Preseed file anyone?
+ .
+ If you do not want to use a preseed file, leave this question empty.

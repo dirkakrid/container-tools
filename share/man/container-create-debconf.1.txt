@@ -1,0 +1,151 @@
+// container-tools - Manage systemd-nspawn containers
+// Copyright (C) 2014-2016 Daniel Baumann <daniel.baumann@open-infrastructure.net>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+CONTAINER-CREATE-DEBOOTSTRAP(1)
+===============================
+:doctype: manpage
+:man manual: Open Infrastructure
+:man source: container-tools
+:man version: {revnumber}
+
+
+NAME
+----
+container-create-debconf - Create an advanced Debian based container with debconf
+
+
+SYNOPSIS
+--------
+*container create -s debconf* ['OPTIONS']
+*container create -s debian* ['OPTIONS']
+*container create -s progress-linux* ['OPTIONS']
+
+
+DESCRIPTION
+-----------
+The debconf container creation script uses debconf(1) to automatically create a Debian based container.
+
+SCOPE
+~~~~~
+Note that this container creation script can do a few things more than just automatically debootstrap based on a preseed file.
+It also allows you to set a root password, configure the network, install certain packages and execute hooks.
+
+But: this is *not* a replacement for a configuration management system (like ansible, puppet, etc.).
+The intenion of this script is to create the initial container to that extend that a configuration managment system
+can take over.
+
+As an analogy, think of debian-installer: d-i sets up your system to make it ready to boot and connect to the network. Everything
+after that is out of scope. Same goes for this script. (FIXME)
+
+FUNCTIONS
+~~~~~~~~~
+
+This script performs the following configuration on top of a Debian based system:
+
+  * network
+  * root password
+  * apt repositories
+  * ...
+
+MODES
+~~~~~
+This container creation script can be used under two different names: debian and progress-linux.
+
+Alternative, calling it under the debconf name is equal to the debian mode.
+
+INTERACTIVE/NONINTERACTIVE
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+FIXME
+
+PRESEEDING
+~~~~~~~~~~
+
+Hierarchy of Preseed Files
+
+The debconf script can be fully preseeded. Such preseed files
+can include one or more preseed files themselfs (currently, only one layer of
+includes is supported, no nested or recursive includes).
+
+The general rule of 'the later preseed file overwrites the earlier' applies.
+The debconf script reads the main preseed file (specified either on command line or
+by debconf selection/input dialog) after any included preseed files in there.
+
+That means that debconf values after the include statement in the main preseed
+file can overwrite any values specified in the included preseed files.
+
+
+OPTIONS
+-------
+The following script options are available:
+
+*-n, --name='NAME'*::
+	Specify container name.
+
+*-p, --preseed-file='FILE'*::
+	Specify the preseed file.
+
+
+EXAMPLES
+--------
+*Create a Debian based container:*::
+	sudo container create -s debian -n jessie.example.net
+
+*Create a Progress Linux container:*::
+	sudo container create -s progress-linux -n cairon-backports.example.net
+
+
+FILES
+-----
+The following files are used:
+
+*/etc/container-tools/config*::
+	Container configuration files.
+
+*/usr/share/container-tools/scripts*::
+	Container creation scripts.
+
+*/usr/share/doc/container-tools*::
+	Container documentation.
+
+*/var/lib/machines*::
+	Container directory.
+
+*/var/cache/container-tools*::
+	Container cache directory.
+
+*/tmp/container-tools*::
+	Container temporary directory.
+
+
+SEE ALSO
+--------
+container-tools(7),
+container(1).
+
+
+HOMEPAGE
+--------
+More information about container-tools and the Open Infrastructure project can be found on the homepage at http://open-infrastructure.net.
+
+
+BUGS
+----
+Bugs can be reported by opening an issue in the GitHub repository at http://github.com/open-infrastructure/container-tools.
+
+
+AUTHORS
+-------
+container-tools was written by Daniel Baumann <daniel.baumann@open-infrastructure.net>.

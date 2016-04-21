@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-CONTAINER-LIST(1)
-=================
+CONTAINER(1)
+============
 :doctype: manpage
 :man manual: Open Infrastructure
 :man source: container-tools
@@ -24,34 +24,28 @@ CONTAINER-LIST(1)
 
 NAME
 ----
-container-list - List container on the system
+container-shell - Manage systemd-nspawn containers (shell)
 
 
 SYNOPSIS
 --------
-*container list* ['OPTIONS']
+*container-shell*
 
 
 DESCRIPTION
 -----------
-The container list command lists container on the system.
+container-tools provides the system integration for managing containers using systemd-nspawn.
 
 
-OPTIONS
--------
-This command has no options.
-
-
-EXAMPLES
+COMMANDS
 --------
-*List container on the the system:*::
-	sudo container list
+All container commands are available, see container(1).
 
 
 SEE ALSO
 --------
-container-tools(7),
-container(1).
+machinectl(1),
+systemd-nspawn(1).
 
 
 HOMEPAGE

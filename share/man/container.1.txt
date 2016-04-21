@@ -1,4 +1,4 @@
-// Open Infrastructure: container-tools
+// container-tools - Manage systemd-nspawn containers
 // Copyright (C) 2014-2016 Daniel Baumann <daniel.baumann@open-infrastructure.net>
 //
 // This program is free software: you can redistribute it and/or modify
@@ -24,7 +24,7 @@ CONTAINER(1)
 
 NAME
 ----
-container - Manage systemd-nspawn Containers
+container - Manage systemd-nspawn containers
 
 
 SYNOPSIS
@@ -34,7 +34,7 @@ SYNOPSIS
 
 DESCRIPTION
 -----------
-container-tools provides the integration for Debian based Containers using systemd-nspawn.
+container-tools provides the system integration for managing containers using systemd-nspawn.
 
 
 OPTIONS
@@ -67,6 +67,9 @@ The following container commands are available:
 *console*::
 	Attach console to a container, see container-console(1).
 
+*limit*::
+	Limit ressources of a container, see container-limit(1).
+
 *list*::
 	List container on the system, see container-list(1).
 
@@ -80,6 +83,9 @@ The following files are used:
 
 */usr/bin/container*, */usr/bin/cnt*::
 	Container program.
+
+*/usr/bin/container-shell*, */usr/bin/cntsh*::
+	Container shell program.
 
 */usr/lib/container-tools*::
 	Container commands.

@@ -1,6 +1,6 @@
 # Makefile
 
-# Open Infrastructure: container-tools
+# container-tools - Manage systemd-nspawn containers
 # Copyright (C) 2014-2016 Daniel Baumann <daniel.baumann@open-infrastructure.net>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -53,6 +53,9 @@ build: share/man/*.txt
 	$(MAKE) -C share/man
 
 install: build
+	mkdir -p $(DESTDIR)/etc/container-tools/config
+	mkdir -p $(DESTDIR)/etc/container-tools/debconf
+
 	mkdir -p $(DESTDIR)/usr/bin
 	cp -r bin/* $(DESTDIR)/usr/bin
 
@@ -61,6 +64,9 @@ install: build
 
 	mkdir -p $(DESTDIR)/usr/share/$(SOFTWARE)
 	cp -r VERSION.txt share/config share/scripts ${DESTDIR}/usr/share/$(SOFTWARE)
+
+	mkdir -p $(DESTDIR)/usr/share/doc/$(SOFTWARE)
+	cp -r share/doc $(DESTDIR)/usr/share/doc/$(SOFTWARE)
 
 	for SECTION in $$(seq 1 8); \
 	do \
@@ -72,8 +78,20 @@ install: build
 	done
 
 	ln -s container.1 $(DESTDIR)/usr/share/man/man1/cnt.1
+	ln -s container-shell.1 $(DESTDIR)/usr/share/man/man1/cntsh.1
+
+	mkdir -p $(DESTDIR)/lib/systemd/system
+	cp -r share/systemd/* $(DESTDIR)/lib/systemd/system
 
 uninstall:
+	for FILE in share/systemd*; \
+	do \
+		if [ -e "$${FILE}" ]; \
+		then \
+			rm -f $(DESTDIR)/lib/systemd/system/$$(basename $${FILE}); \
+		fi; \
+	done
+
 	for SECTION in $$(seq 1 8); \
 	do \
 		for FILE in share/man/*.$${SECTION}; \
@@ -87,6 +105,10 @@ uninstall:
 	done
 
 	rm -f $(DESTDIR)/usr/share/man/man1/cnt.1
+	rm -f $(DESTDIR)/usr/share/man/man1/cntsh.1
+
+	rm -rf $(DESTDIR)/usr/share/doc/$(SOFTWARE)
+	rmdir --ignore-fail-on-non-empty --parents $(DESTDIR)/usr/share/doc || true
 
 	rm -rf $(DESTDIR)/usr/share/$(SOFTWARE)
 	rmdir --ignore-fail-on-non-empty --parents $(DESTDIR)/usr/share || true
@@ -99,6 +121,9 @@ uninstall:
 		rm -f $(DESTDIR)/usr/bin/$$(basename $${FILE}); \
 	done
 	rmdir --ignore-fail-on-non-empty --parents $(DESTDIR)/usr/bin || true
+
+	rmdir --ignore-fail-on-non-empty --parents $(DESTDIR)/etc/container-tools/config || true
+	rmdir --ignore-fail-on-non-empty --parents $(DESTDIR)/etc/container-tools/debconf || true
 
 clean:
 	$(MAKE) -C share/man clean
