@@ -18,6 +18,7 @@ Vcs-Git: https://github.com/daniel-baumann/open-infrastructure-container-tools
 Package: open-infrastructure-container-tools
 Architecture: all
 Depends:
+ crudini (>= 0.7),
  dbus,
  systemd-container | systemd (<< 224-2~),
  ${misc:Depends},
