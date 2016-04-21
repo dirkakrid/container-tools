@@ -10,7 +10,7 @@ Build-Depends:
  docbook-xsl,
  libxml2-utils,
  xsltproc,
-Standards-Version: 3.9.7
+Standards-Version: 3.9.8
 Homepage: http://open-infrastructure.net/container-tools
 Vcs-Browser: https://github.com/open-infrastructure/container-tools
 Vcs-Git: https://github.com/open-infrastructure/container-tools
