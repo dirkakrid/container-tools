@@ -51,7 +51,7 @@ SOURCE
   2. git clone https://github.com/open-infrastructure/container-tools
   3. cd container-tools && sudo make install
 
-DEBIAN 8 (STRETCH) AND NEWER
+DEBIAN 9 (STRETCH) AND NEWER
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   * sudo apt install container-tools
