@@ -40,7 +40,13 @@ systemd-nspawn.
 4. Development
 --------------
 
-Bug reports, feature requests, and patches are welcome. Please base them against the 'next' Git branch.
+Bug reports, feature requests, and patches are welcome via Github:
+
+  * https://github.com/open-infrastructure/container-tools
+
+Please base them against the 'next' Git branch using common sense:
+
+  * https://www.kernel.org/doc/Documentation/SubmittingPatches
 
 
 5. Usage
