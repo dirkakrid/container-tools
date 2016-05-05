@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <meta name="description" content="Open Infrastructure">
+    <meta name="author" content="open-infrastructure.net">
+    <link rel="icon" type="image/png" href="favicon.png" />
+
+    <title>Open Infrastructure</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="meta/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+    <link href="local/ie10-viewport-bug-workaround.css" rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <link href="meta/dejavu-fonts/dejavu-fonts.css" rel="stylesheet">
+    <link href="meta/font-awesome/css/font-awesome.min.css" rel="stylesheet">
+    <link href="local/color-red.css" rel="stylesheet">
+    <link href="local/font.css" rel="stylesheet">
+    <link href="local/label.css" rel="stylesheet">
+    <link href="local/margin.css" rel="stylesheet">
+    <link href="local/navbar.css" rel="stylesheet">
+    <link href="local/rotate.css" rel="stylesheet">
+    <link href="local/table.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="meta/html5shiv/html5shiv.min.js"></script>
+      <script src="meta/respond/respond.min.js"></script>
+    <![endif]-->
+  </head>
+
+  <body>
+
+    <div class="container">
+
+      <!-- Static navbar -->
+      <nav class="navbar navbar-default">
+        <div class="container-fluid">
+          <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+              <span class="sr-only">Toggle navigation</span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="http://open-infrastructure.net" style="color: black;"><b><i class="fa fa-circle-o" style="color: #cc0000;"></i> Open Infrastructure</b></a>
+          </div>
+          <div id="navbar" class="navbar-collapse collapse">
+          </div><!--/.nav-collapse -->
+        </div><!--/.container-fluid -->
+      </nav>
+
+      <!-- Content -->
+<h1>container-tools - Manage systemd-nspawn containers</h1>
+
+<h2>1. Description</h2>
+
+<div class="row">
+  <div class="col-lg-2">
+    <h2><i class="fa fa-clone fa-5x"></i></h2>
+  </div>
+  <div class="col-lg-10">
+    <br />
+    <blockquote>
+      <p>"[A Linux container] is an operating-system-level virtualization environment for running multiple isolated Linux systems (containers) on a single Linux control host."</p>
+      <footer><a href="https://en.wikipedia.org/wiki/LXC">Wikipedia</a></footer>
+    </blockquote>
+
+    <big><b>container-tools provides the system integration for managing containers using systemd-nspawn.</b></big>
+  </div>
+</div>
+
+<h2>2. Download</h2>
+
+<ul>
+  <li><a href="https://github.com/open-infrastructure/container-tools/releases">https://github.com/open-infrastructure/container-tools/releases</a></li>
+</ul>
+
+<h2>3. Installation</h2>
+
+<h3>3.1 Source</h3>
+
+<ol>
+  <li><kbd>sudo apt instal asciidoc git docbook-xml docbook-xsl libxml2-utils make xsltproc</kbd></li>
+  <li><kbd>git clone https://github.com/open-infrastructure/container-tools</kbd></li>
+  <li><kbd>cd container-tools &amp;&amp; sudo make install</kbd></li>
+</ol>
+
+<h3>3.2 Debian 9 (stretch) and newer</h3>
+
+<ul>
+  <li><kbd>sudo apt install container-tools</kbd></li>
+</ul>
+
+<h2>4. Development</h2>
+
+<p>Bug reports, feature requests, and patches are welcome via <a href="https://github.com/open-infrastructure/container-tools">Github</a>. Please base them against the 'next' Git branch using <a href="https://www.kernel.org/doc/Documentation/SubmittingPatches">common sense</a>.</p>
+
+<h2>5. Usage</h2>
+
+<ul>
+  <li>Create a new container:<br />
+      <kbd>sudo container create -n <u>NAME</u></kbd><br /><br /></li>
+  <li>Start a container:<br />
+      <kbd>sudo container start -n <u>NAME</u></kbd><br /><br /></li>
+  <li>Restart a container:<br />
+      <kbd>sudo container restart -n <u>NAME</u></kbd><br /><br /></li>
+  <li>Stop a container:<br />
+      <kbd>sudo container stop -n <u>NAME</u></kbd><br /><br /></li>
+  <li>Remove a container:<br />
+      <kbd>sudo container remove -n <u>NAME</u></kbd><br /><br /></li>
+  <li>Attach console to a container::<br />
+      <kbd>sudo container console -n <u>NAME</u></kbd><br /><br /></li>
+  <li>Limit ressources of a container:<br />
+      <kbd>sudo container limit -n <u>NAME</u> --cpu-quota 10%</kbd><br /><br /></li>
+  <li>List container on the system:<br />
+      <kbd>sudo container list</kbd><br /><br /></li>
+  <li>Show container-tools version:<br />
+      <kbd>container version</kbd></li>
+</ul>
+
+<h2>6. Links</h2>
+
+<!-- <p><a href="https://bestpractices.coreinfrastructure.org/projects/114"><img src="https://bestpractices.coreinfrastructure.org/projects/114/badge" /></a></p> -->
+
+<ul>
+  <li>2016-02-24: <a href="https://lwn.net/Articles/676831/">Systemd vs. Docker</a> [<a href="https://lwn.net">lwn.net</a>]</li>
+  <li>2015-06-10: <a href="https://lwn.net/Articles/647634/">Systemd and containers</a> [<a href="https://lwn.net">lwn.net</a>]</li>
+  <li>2014-07-07: <a href="https://lwn.net/Articles/604609/">Control groups</a> [<a href="https://lwn.net">lwn.net</a>]</li>
+  <li>2013-11-13: <a href="https://www.youtube.com/watch?v=s7LlUs5D9p4">Systemd-Nspawn is Chroot on Steroids</a> [<a href="https://events.linuxfoundation.org/events/archive/2013/linuxcon-europe">LinuxCon Europe</a>]</li>
+  <li>2013-11-03: <a href="https://lwn.net/Articles/572957/">Creating containers with systemd-nspawn</a> [<a href="https://lwn.net">lwn.net</a>]</li>
+  <li>2013-02-06: <a href="https://lwn.net/Articles/536033/">Systemd lightweight containers</a> [<a href="https://lwn.net">lwn.net</a>]</li>
+  <li>2013-01-04: <a href="https://lwn.net/Articles/531114/">Namespaces in operation</a> [<a href="https://lwn.net">lwn.net</a>]</li>
+</ul>
+
+<h2>7. Authors</h2>
+
+<ul>
+  <li><a href="mailto:daniel.baumann@open-infrastructure.net">Daniel Baumann</a></li>
+</ul>
+      <!-- /Content -->
+
+      <hr />
+
+      <footer>
+        <p class="text-muted">2014-2016 <a class="text-muted" href="mailto:system-administration@open-infrastructure.net?subject=Open%20Infrastructure:%20Feedback">System Administration</a> (<a class="text-muted" href="legal-information.html">Legal Information</a>) <a class="text-muted pull-right" href="https://github.com/open-infrastructure"><i class="fa fa-heart" style="color: #cc0000;"></i> Source Code</a></p>
+      </footer>
+
+    </div> <!-- /container -->
+
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="meta/jquery/jquery.min.js"></script>
+    <script src="meta/bootstrap/js/bootstrap.min.js"></script>
+    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+    <script src="local/ie10-viewport-bug-workaround.js"></script>
+    <!-- Custom scripts for this template -->
+    <script src="local/headings.js"></script>
+    <script src="local/table.js"></script>
+  </body>
+</html>
