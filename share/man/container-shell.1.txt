@@ -50,7 +50,7 @@ All container commands are available, see container(1). Additionally, the follow
 *help COMMAND:*::
 	shows help (manpage) for a specific container command.
 
-*logout:*::
+*logout*, *exit:*::
 	exits container-shell.
 
 

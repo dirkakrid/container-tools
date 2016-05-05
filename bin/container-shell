@@ -49,7 +49,7 @@ Shell ()
 			return
 			;;
 
-		logout)
+		logout|exit)
 			exit 0
 			;;
 
