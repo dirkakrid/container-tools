@@ -104,7 +104,7 @@ EOF
 		;;
 esac
 
-CONTAINERS="$(cd "${MACHINES}" && find -maxdepth 1 -type d -and -not -name 'lost+found' -printf '%P\n' | sort)"
+CONTAINERS="$(cd "${MACHINES}" && find -maxdepth 1 -type d -and -not -name 'lost+found' -and -not -name '.snap' -and -not -name '.snapshot' -printf '%P\n' | sort)"
 
 for CONTAINER in ${CONTAINERS}
 do
