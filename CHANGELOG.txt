@@ -14,7 +14,7 @@
 2016-04-01	Daniel Baumann <daniel.baumann@open-infrastructure.net>
 
 	* Releasing version 20160401.
-	* Addding native ARM architecture support.
+	* Adding native ARM architecture support.
 	* Adding new container programs:
 	  - container-autostart
 	  - container-shell
