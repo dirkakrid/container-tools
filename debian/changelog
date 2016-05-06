@@ -1,3 +1,9 @@
+open-infrastructure-container-tools (20160501+20160506.1-1) cairon-backports-extras; urgency=low
+
+  * Uploading git snapshot to cairon-backports-extras.
+
+ -- Daniel Baumann <mail@daniel-baumann.ch>  Fri, 06 May 2016 14:09:43 +0200
+
 open-infrastructure-container-tools (20160501-1) unstable; urgency=low
 
   * Uploading to sid.
