@@ -1,3 +1,12 @@
+open-infrastructure-container-tools (20160501-1) unstable; urgency=low
+
+  * Uploading to sid.
+  * Merging upstream version 20160501.
+  * Correcting email address in previous upload.
+  * Updating vcs fields.
+
+ -- Daniel Baumann <mail@daniel-baumann.ch>  Fri, 06 May 2016 14:09:43 +0200
+
 open-infrastructure-container-tools (20160415-1) unstable; urgency=low
 
   * Uploading to sid.
