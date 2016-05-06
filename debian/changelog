@@ -1,0 +1,5 @@
+open-infrastructure-container-tools (20160301-1) unstable; urgency=low
+
+  * Initial upload to sid (Closes: #816418).
+
+ -- Daniel Baumann <mail@daniel-baumann.ch>  Wed, 02 Mar 2016 12:17:58 +0100

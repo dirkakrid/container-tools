@@ -1,0 +1,33 @@
+Source: open-infrastructure-container-tools
+Section: admin
+Priority: optional
+Maintainer: Daniel Baumann <mail@daniel-baumann.ch>
+Build-Depends:
+ asciidoc,
+ debhelper (>= 9),
+ docbook-xml,
+ docbook-xsl,
+ libxml2-utils,
+ xsltproc,
+Standards-Version: 3.9.7
+Homepage: http://open-infrastructure.net/container-tools
+Vcs-Browser: https://github.com/open-infrastructure/container-tools
+Vcs-Git: git://github.com/open-infrastructure/container-tools
+
+Package: open-infrastructure-container-tools
+Architecture: all
+Depends:
+ dbus,
+ systemd-container | systemd (<< 224-2~),
+ ${misc:Depends},
+Recommends:
+ debootstrap,
+Conflicts:
+ radiance,
+Description: Tools to manage systemd-nspawn containers
+ A Linux Container is an operating-system-level virtualization environment for
+ running multiple isolated Linux systems (containers) on a single Linux control
+ host.
+ .
+ container-tools provides the integration for Debian based Containers using
+ systemd-nspawn.
