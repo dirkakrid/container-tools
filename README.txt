@@ -31,7 +31,7 @@ systemd-nspawn.
   2. git clone https://github.com/open-infrastructure/container-tools
   3. cd container-tools && sudo make install
 
-3.2 Debian 8 (stretch) and newer
+3.2 Debian 9 (stretch) and newer
 --------------------------------
 
   * sudo apt install container-tools
@@ -40,7 +40,13 @@ systemd-nspawn.
 4. Development
 --------------
 
-Bug reports, feature requests, and patches are welcome. Please base them against the 'next' Git branch.
+Bug reports, feature requests, and patches are welcome via Github:
+
+  * https://github.com/open-infrastructure/container-tools
+
+Please base them against the 'next' Git branch using common sense:
+
+  * https://www.kernel.org/doc/Documentation/SubmittingPatches
 
 
 5. Usage

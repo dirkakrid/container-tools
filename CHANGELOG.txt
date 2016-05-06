@@ -1,3 +1,10 @@
+2016-05-01	Daniel Baumann <daniel.baumann@open-infrastructure.net>
+
+	* Releasing version 20160501.
+	* Adding multiple output formats in container list command.
+	* Adding status based listing of containers in container list command.
+	* Correcting errors in documentation.
+
 2016-04-15	Daniel Baumann <daniel.baumann@open-infrastructure.net>
 
 	* Releasing version 20160415.
@@ -14,7 +21,7 @@
 2016-04-01	Daniel Baumann <daniel.baumann@open-infrastructure.net>
 
 	* Releasing version 20160401.
-	* Addding native ARM architecture support.
+	* Adding native ARM architecture support.
 	* Adding new container programs:
 	  - container-autostart
 	  - container-shell

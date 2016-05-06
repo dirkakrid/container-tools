@@ -39,13 +39,24 @@ The container list command lists container on the system.
 
 OPTIONS
 -------
-This command has no options.
+The following container options are available:
 
+*-a, --all*::
+	List all available container.
+
+*-f, --format='FORMAT'*::
+	Use format to list container. Currently available formats are 'short' or 'full' (default).
+
+*-s, --started*::
+	List only started container.
+
+*-t, --stopped*::
+	List only stopped container.
 
 EXAMPLES
 --------
-*List container on the the system:*::
-	sudo container list
+*List all started container on the the system as a machine-readable list:*::
+	sudo container list --all --format=short
 
 
 SEE ALSO
