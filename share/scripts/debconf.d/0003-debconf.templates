@@ -98,6 +98,12 @@ Default:
 Description: Bridge
  Bridge.
 
+Template: cnt-debconf/network0/veth
+Type: string
+Default:
+Description: Veth name
+ Veth name.
+
 Template: cnt-debconf/network0/ipv4-method
 Type: select
 Choices: dhcp, static, none
