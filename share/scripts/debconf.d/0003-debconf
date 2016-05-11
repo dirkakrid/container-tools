@@ -673,6 +673,10 @@ Network_defaults ()
 	#   * respect pre-existing interfaces (or interfaces.d)
 	#   * add support for bridges (make interface configuration more generic?)
 
+	HOSTNAME_SHORT="$(echo ${NAME} | cut -c-9)"
+	VETH_NAME="$(echo ${HOSTNAME_SHORT:-veth0})"
+
+	NETWORK0_VETH="${NETWORK0_VETH:-VETH_NAME}"
 	NETWORK0_BRIDGE="${NETWORK0_BRIDGE:-br0}"
 	NETWORK0_IPV4_METHOD="${NETWORK0_IPV4_METHOD:-dhcp}"
 	NETWORK0_IPV4_ADDRESS="${NETWORK0_IPV4_ADDRESS:-192.168.1.2}"
@@ -694,6 +698,9 @@ Network ()
 {
 	db_get cnt-debconf/network0/bridge
 	NETWORK0_BRIDGE="${RET}" # string (w/o empty)
+
+	db_get cnt-debconf/network0/veth
+	NETWORK0_VETH="${RET}" # string (w/o empty)
 
 	db_get cnt-debconf/network0/ipv4-method
 	NETWORK0_IPV4_METHOD="${RET}" # select
@@ -738,6 +745,9 @@ Network ()
 
 	db_set cnt-debconf/network0/bridge "${NETWORK0_BRIDGE}"
 	db_fset cnt-debconf/network0/bridge seen false
+
+	db_set cnt-debconf/network0/veth "${NETWORK0_VETH}"
+	db_fset cnt-debconf/network0/veth seen false
 
 	db_set cnt-debconf/network0/ipv4-method "${NETWORK0_IPV4_METHOD}"
 	db_fset cnt-debconf/network0/ipv4-method seen false
@@ -784,6 +794,9 @@ Network ()
 
 	db_get cnt-debconf/network0/bridge
 	NETWORK0_BRIDGE="${RET}" # select
+
+	db_get cnt-debconf/network0/veth
+	NETWORK0_VETH="${RET}" # select
 
 	db_get cnt-debconf/network0/ipv4-method
 	NETWORK0_IPV4_METHOD="${RET}" # select
@@ -838,6 +851,11 @@ Network ()
 		if db_get cnt-debconf/network${NUMBER}/bridge
 		then
 			eval NETWORK${NUMBER}_BRIDGE="\"${RET}\"" # string (w/o empty)
+		fi
+
+		if db_get cnt-debconf/network${NUMBER}/veth
+		then
+			eval NETWORK${NUMBER}_VETH="\"${RET}\"" # string (w/o empty)
 		fi
 
 		if db_get cnt-debconf/network${NUMBER}/ipv4-comment
@@ -910,6 +928,9 @@ Network ()
 	do
 		eval BRIDGE="$`echo NETWORK${NUMBER}_BRIDGE`"
 		echo "NETWORK${NUMBER}_BRIDGE=\"${BRIDGE}\"" >> "${DEBCONF_TMPDIR}/debconf.default"
+
+		eval VETH="$`echo NETWORK${NUMBER}_VETH`"
+		echo "NETWORK${NUMBER}_VETH=\"${VETH}\"" >> "${DEBCONF_TMPDIR}/debconf.default"
 
 		eval COMMENT="$`echo NETWORK${NUMBER}_IPV4_COMMENT`"
 		echo "NETWORK${NUMBER}_IPV4_COMMENT=\"${COMMENT}\"" >> "${DEBCONF_TMPDIR}/debconf.default"
