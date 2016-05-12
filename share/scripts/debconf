@@ -902,11 +902,10 @@ Commands ()
 	fi
 
 	# config (FIXME)
-	sed -i -e "s|^network-bridge=.*|network-bridge=${NETWORK0_BRIDGE}|" "${CONFIG}/${NAME}.conf"
 	HOSTNAME_SHORT="$(echo ${NAME} | cut -c-9)"  # max 15 characters: 15 - veth_ - 0
-
 	HOST_INTERFACE_NAME="$(echo ${NETWORK0_VETH:-veth_${HOSTNAME_SHORT}_0})"
 
+	sed -i -e "s|^cnt.network-bridge=.*|cnt.network-bridge=${HOST_INTERFACE_NAME}:${NETWORK0_BRIDGE:-br0}|g" "${CONFIG}/${NAME}.conf"
 	sed -i -e "s|^network-veth-extra=.*|network-veth-extra=${HOST_INTERFACE_NAME}:eth0|g" "${CONFIG}/${NAME}.conf"
 
 	for NUMBER in $(seq 1 ${NETWORK_NUMBER})
@@ -921,6 +920,8 @@ Commands ()
 		HOST_INTERFACE_NAME="$(echo ${HOST_INTERFACE_NAME:-veth_${HOSTNAME_SHORT}_${NUMBER}})"
 		CONTAINER_INTERFACE_NAME="eth${NUMBER}"
 		sed -i -e "/^register=.*/ a network-veth-extra=${HOST_INTERFACE_NAME}:${CONTAINER_INTERFACE_NAME}" "${CONFIG}/${NAME}.conf"
+		eval BRIDGE="$`echo NETWORK${NUMBER}_BRIDGE`"
+		sed -i -e "/^register=.*/ a cnt.network-bridge=${HOST_INTERFACE_NAME}:${BRIDGE:-br${NUMBER}}" "${CONFIG}/${NAME}.conf"
 	done
 
 	# Setting root password
