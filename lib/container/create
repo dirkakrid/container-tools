@@ -128,6 +128,7 @@ done
 mkdir -p "${CONFIG}"
 
 sed	-e "s|@CNT_AUTOSTART@|${CNT_AUTOSTART}|g" \
+	-e "s|@CNT_NETWORK_BRIDGE@|${CNT_NETWORK_BRIDGE}|g" \
 	-e "s|@NAME@|${NAME}|g" \
 	-e "s|@BIND@|${BIND}|g" \
 	-e "s|@BOOT@|yes|g" \
@@ -136,7 +137,6 @@ sed	-e "s|@CNT_AUTOSTART@|${CNT_AUTOSTART}|g" \
 	-e "s|@DROP_CAPABILITY@|${DROP_CAPABILITY}|g" \
 	-e "s|@MACHINE@|${NAME}|g" \
 	-e "s|@NETWORK_VETH_EXTRA@|${NETWORK_VETH_EXTRA}|g" \
-	-e "s|@NETWORK_BRIDGE@|br0|g" \
 	-e "s|@LINK_JOURNAL@|no|g" \
 	-e "s|@REGISTER@|yes|g" \
 /usr/share/container-tools/config/container.conf.in > "${CONFIG}/${NAME}.conf"

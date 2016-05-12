@@ -185,15 +185,33 @@ then
 
 	MACHINE="--machine=${NAME}"
 
-	NETWORK_BRIDGE="$(awk -F= '/^network-bridge=/ { print $2 }' ${CONFIG}/${NAME}.conf)"
+	NETWORK_BRIDGES="$(awk -F= '/^cnt.network-bridge=/ { print $2 }' ${CONFIG}/${NAME}.conf)"
 
-	case "${NETWORK_BRIDGE}" in
+	case "${NETWORK_BRIDGES}" in
 		"")
-			NETWORK_BRIDGE=""
 			;;
 
 		*)
-			NETWORK_BRIDGE="--network-bridge=${NETWORK_BRIDGE}"
+			for BRIDGE_DEFINITION in ${NETWORK_BRIDGES}
+			do
+				INTERFACE="$(echo ${BRIDGE_DEFINITION} | awk -F: '{ print $1 }')"
+				BRIDGE="$(echo ${BRIDGE_DEFINITION} | awk -F: '{ print $2 }')"
+
+				if [ -n "${BRIDGE}" ] && [ -n "${INTERFACE}" ]
+				then
+cat > "${INTERFACES_D}/${INTERFACE}" << EOF
+auto ${INTERFACE}
+allow-hotplug ${INTERFACE}
+iface ${INTERFACE} inet manual
+	pre-up ifconfig ${INTERFACE} up
+	post-up brctl addif ${BRIDGE} ${INTERFACE}
+	pre-down brctl delif ${BRIDGE} ${INTERFACE}
+	post-down ifconfig ${INTERFACE} down
+EOF
+				else
+					echo "Warning bridge definition '${BRIDGE_DEFINITION}' not recognized (expected <bridge>:<interface>): Ignoring"
+				fi
+			done
 			;;
 	esac
 
@@ -312,11 +330,11 @@ fi
 # Run
 case "${SET_PROPERTY}" in
 	true)
-		${SETARCH} systemd-nspawn ${BIND} ${BOOT} ${CAPABILITY} ${DIRECTORY} ${DROP_CAPABILITY} ${MACHINE} ${NETWORK_BRIDGE} ${NETWORK_VETH_EXTRA} ${LINK_JOURNAL} ${REGISTER} & \
+		${SETARCH} systemd-nspawn ${BIND} ${BOOT} ${CAPABILITY} ${DIRECTORY} ${DROP_CAPABILITY} ${MACHINE} ${NETWORK_VETH_EXTRA} ${LINK_JOURNAL} ${REGISTER} & \
 		systemctl --runtime set-property ${NAME} ${BLOCK_IO_DEVICE_WEIGHT} ${BLOCK_IO_READ_BANDWITH} ${BLOCK_IO_WEIGHT} ${BLOCK_IO_WRITE_BANDWITH} ${CPU_QUOTA} ${CPU_SHARES} ${MEMORY_LIMIT} ${TASKS_MAX}
 		;;
 
 	*)
-		${SETARCH} systemd-nspawn ${BIND} ${BOOT} ${CAPABILITY} ${DIRECTORY} ${DROP_CAPABILITY} ${MACHINE} ${NETWORK_BRIDGE} ${NETWORK_VETH_EXTRA} ${LINK_JOURNAL} ${REGISTER}
+		${SETARCH} systemd-nspawn ${BIND} ${BOOT} ${CAPABILITY} ${DIRECTORY} ${DROP_CAPABILITY} ${MACHINE} ${NETWORK_VETH_EXTRA} ${LINK_JOURNAL} ${REGISTER}
 		;;
 esac
