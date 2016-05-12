@@ -186,6 +186,29 @@ then
 
 	MACHINE="--machine=${NAME}"
 
+	NETWORK_VETH_EXTRA_CONF="$(awk -F= '/^network-veth-extra=/ { print $2 }' ${CONFIG}/${NAME}.conf)"
+	NETWORK_VETH_EXTRA=""
+
+	case "${NETWORK_VETH_EXTRA_CONF}" in
+		"")
+			;;
+
+		*)
+			for VETH in ${NETWORK_VETH_EXTRA_CONF}
+			do
+				NETWORK_VETH_EXTRA="${NETWORK_VETH_EXTRA} --network-veth-extra=${VETH}"
+				INTERFACE="$(echo ${VETH} | awk -F: '{ print $1 }')"
+cat > "${INTERFACES_D}/${INTERFACE}" << EOF
+auto ${INTERFACE}
+allow-hotplug ${INTERFACE}
+iface ${INTERFACE} inet manual
+	pre-up ifconfig ${INTERFACE} up
+	post-down ifconfig ${INTERFACE} down
+EOF
+			done
+			;;
+	esac
+
 	NETWORK_BRIDGES="$(awk -F= '/^cnt.network-bridge=/ { print $2 }' ${CONFIG}/${NAME}.conf)"
 
 	case "${NETWORK_BRIDGES}" in
@@ -212,29 +235,6 @@ EOF
 				else
 					echo "Warning bridge definition '${BRIDGE_DEFINITION}' not recognized (expected <bridge>:<interface>): Ignoring"
 				fi
-			done
-			;;
-	esac
-
-	NETWORK_VETH_EXTRA_CONF="$(awk -F= '/^network-veth-extra=/ { print $2 }' ${CONFIG}/${NAME}.conf)"
-	NETWORK_VETH_EXTRA=""
-
-	case "${NETWORK_VETH_EXTRA_CONF}" in
-		"")
-			;;
-
-		*)
-			for VETH in ${NETWORK_VETH_EXTRA_CONF}
-			do
-				NETWORK_VETH_EXTRA="${NETWORK_VETH_EXTRA} --network-veth-extra=${VETH}"
-				INTERFACE="$(echo ${VETH} | awk -F: '{ print $1 }')"
-cat > "${INTERFACES_D}/${INTERFACE}" << EOF
-auto ${INTERFACE}
-allow-hotplug ${INTERFACE}
-iface ${INTERFACE} inet manual
-	pre-up ifconfig ${INTERFACE} up
-	post-down ifconfig ${INTERFACE} down
-EOF
 			done
 			;;
 	esac
