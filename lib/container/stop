@@ -24,10 +24,12 @@ CONFIG="/etc/container-tools/config"
 MACHINES="/var/lib/machines"
 INTERFACES_D="/etc/network/interfaces.d"
 
+RUN_CLEANUP="false"
+
 Parameters ()
 {
-	LONG_OPTIONS="name:,force"
-	OPTIONS="n:,f"
+	LONG_OPTIONS="name:,force,cleanup"
+	OPTIONS="n:,f,c"
 
 	PARAMETERS="$(getopt --longoptions ${LONG_OPTIONS} --name=${COMMAND} --options ${OPTIONS} --shell sh -- ${@})"
 
@@ -49,6 +51,11 @@ Parameters ()
 
 			-f|--force)
 				FORCE="true"
+				;;
+
+			-c|--cleanup)
+				RUN_CLEANUP="true"
+				shift 1
 				;;
 
 			--)
@@ -78,7 +85,7 @@ Cleanup ()
 			do
 				INTERFACE="$(echo ${VETH} | awk -F: '{ print $1 }')"
 				FILE="${INTERFACES_D}/${INTERFACE}"
-				if [ -f "${FILE}"]
+				if [ -f "${FILE}" ]
 				then
 					rm -f "${FILE}"
 				fi
@@ -108,6 +115,16 @@ fi
 
 STATE="$(machinectl show ${NAME} 2>&1 | awk -F= '/^State=/ { print $2 }')"
 
+case "${RUN_CLEANUP}" in
+	true)
+		Cleanup
+		exit 0
+		;;
+
+	*)
+		;;
+esac
+
 case "${STATE}" in
 	running)
 		;;
@@ -130,5 +147,3 @@ esac
 
 # Run
 machinectl ${MODE} ${NAME}
-
-Cleanup

@@ -5,6 +5,7 @@ Description="Container: %i"
 Type=simple
 ExecStart=/usr/bin/container start -n %i --exec-nspawn
 ExecStartPost=/usr/bin/container start -n %i --afterstart
+ExecStopPost=/usr/bin/container stop -n %i --cleanup
 KillMode=mixed
 
 [Install]
