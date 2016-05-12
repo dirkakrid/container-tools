@@ -1,0 +1,11 @@
+[Unit]
+Description="Container: %i"
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/container start -n %i --exec-nspawn
+ExecStartPost=/usr/bin/container start -n %i --afterstart
+KillMode=mixed
+
+[Install]
+WantedBy=multi-user.target

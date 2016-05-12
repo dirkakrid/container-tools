@@ -24,10 +24,13 @@ CONFIG="/etc/container-tools/config"
 MACHINES="/var/lib/machines"
 INTERFACES_D="/etc/network/interfaces.d"
 
+RUN_AFTER_START="false"
+USE_SYSTEMCTL="true"
+
 Parameters ()
 {
-	LONG_OPTIONS="name:"
-	OPTIONS="n:"
+	LONG_OPTIONS="afterstart,exec-nspawn,name:"
+	OPTIONS="n:ae"
 
 	PARAMETERS="$(getopt --longoptions ${LONG_OPTIONS} --name=${COMMAND} --options ${OPTIONS} --shell sh -- ${@})"
 
@@ -46,7 +49,15 @@ Parameters ()
 				NAME="${2}"
 				shift 2
 				;;
-
+			-a|--afterstart)
+				RUN_AFTER_START="true"
+				USE_SYSTEMCTL="false"
+				shift 1
+				;;
+			-e|--exec-nspawn)
+				USE_SYSTEMCTL="false"
+				shift 1
+				;;
 			--)
 				shift 1
 				break
@@ -79,12 +90,16 @@ then
 	exit 1
 fi
 
-STATE="$(machinectl show ${NAME} 2>&1 | awk -F= '/^State=/ { print $2 }')"
+case "${RUN_AFTER_START}" in
+	false)
+		STATE="$(machinectl show ${NAME} 2>&1 | awk -F= '/^State=/ { print $2 }')"
 
-case "${STATE}" in
-	running)
-		echo "'${NAME}': container is already started" >&2
-		exit 1
+		case "${STATE}" in
+			running)
+				echo "'${NAME}': container is already started" >&2
+				exit 1
+				;;
+		esac
 		;;
 esac
 
@@ -328,14 +343,25 @@ EOF
 	fi
 fi
 
-# Run
-case "${SET_PROPERTY}" in
+case "${USE_SYSTEMCTL}" in
 	true)
-		${SETARCH} systemd-nspawn ${BIND} ${BOOT} ${CAPABILITY} ${DIRECTORY} ${DROP_CAPABILITY} ${MACHINE} ${NETWORK_VETH_EXTRA} ${LINK_JOURNAL} ${REGISTER} & \
-		systemctl --runtime set-property ${NAME} ${BLOCK_IO_DEVICE_WEIGHT} ${BLOCK_IO_READ_BANDWITH} ${BLOCK_IO_WEIGHT} ${BLOCK_IO_WRITE_BANDWITH} ${CPU_QUOTA} ${CPU_SHARES} ${MEMORY_LIMIT} ${TASKS_MAX}
+		systemctl start container@${NAME}.service
+		# FIXME start console .. after sleep? + configuration option
+		exit 0
+		;;
+esac
+
+case "${RUN_AFTER_START}" in
+	true)
+		case "${SET_PROPERTY}" in
+			true)
+				systemctl --runtime set-property ${NAME} ${BLOCK_IO_DEVICE_WEIGHT} ${BLOCK_IO_READ_BANDWITH} ${BLOCK_IO_WEIGHT} ${BLOCK_IO_WRITE_BANDWITH} ${CPU_QUOTA} ${CPU_SHARES} ${MEMORY_LIMIT} ${TASKS_MAX}
+				;;
+		esac
 		;;
 
 	*)
-		${SETARCH} systemd-nspawn ${BIND} ${BOOT} ${CAPABILITY} ${DIRECTORY} ${DROP_CAPABILITY} ${MACHINE} ${NETWORK_VETH_EXTRA} ${LINK_JOURNAL} ${REGISTER}
+		# Run
+		${SETARCH} systemd-nspawn --keep-unit ${BIND} ${BOOT} ${CAPABILITY} ${DIRECTORY} ${DROP_CAPABILITY} ${MACHINE} ${NETWORK_VETH_EXTRA} ${LINK_JOURNAL} ${REGISTER}
 		;;
 esac
