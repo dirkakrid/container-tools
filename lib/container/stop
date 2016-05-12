@@ -23,10 +23,12 @@ COMMAND="$(basename ${0})"
 CONFIG="/etc/container-tools/config"
 MACHINES="/var/lib/machines"
 
+RUN_CLEANUP="false"
+
 Parameters ()
 {
-	LONG_OPTIONS="name:,force"
-	OPTIONS="n:,f"
+	LONG_OPTIONS="name:,force,cleanup"
+	OPTIONS="n:,f,c"
 
 	PARAMETERS="$(getopt --longoptions ${LONG_OPTIONS} --name=${COMMAND} --options ${OPTIONS} --shell sh -- ${@})"
 
@@ -48,6 +50,11 @@ Parameters ()
 
 			-f|--force)
 				FORCE="true"
+				;;
+
+			-c|--cleanup)
+				RUN_CLEANUP="true"
+				shift 1
 				;;
 
 			--)
@@ -84,6 +91,36 @@ fi
 
 STATE="$(machinectl show ${NAME} 2>&1 | awk -F= '/^State=/ { print $2 }')"
 
+# Removing network configuration
+case "${RUN_CLEANUP}" in
+	true)
+		NETWORK_VETH_EXTRA_CONF="$(awk -F= '/^network-veth-extra=/ { print $2 }' ${CONFIG}/${NAME}.conf)"
+
+		case "${NETWORK_VETH_EXTRA_CONF}" in
+			"")
+				;;
+
+			*)
+				for VETH in ${NETWORK_VETH_EXTRA_CONF}
+				do
+					INTERFACE="$(echo ${VETH} | awk -F: '{ print $1 }')"
+					FILE="/etc/network/interfaces.d/${INTERFACE}"
+
+					if [ -f "${FILE}" ]
+					then
+						rm -f "${FILE}"
+					fi
+				done
+				;;
+		esac
+
+		exit 0
+		;;
+
+	*)
+		;;
+esac
+
 case "${STATE}" in
 	running)
 		;;
@@ -106,24 +143,3 @@ esac
 
 # Run
 machinectl ${MODE} ${NAME}
-
-# Removing network configuration
-NETWORK_VETH_EXTRA_CONF="$(awk -F= '/^network-veth-extra=/ { print $2 }' ${CONFIG}/${NAME}.conf)"
-
-case "${NETWORK_VETH_EXTRA_CONF}" in
-	"")
-		;;
-
-	*)
-		for VETH in ${NETWORK_VETH_EXTRA_CONF}
-		do
-			INTERFACE="$(echo ${VETH} | awk -F: '{ print $1 }')"
-			FILE="/etc/network/interfaces.d/${INTERFACE}"
-
-			if [ -f "${FILE}"]
-			then
-				rm -f "${FILE}"
-			fi
-		done
-	;;
-esac
