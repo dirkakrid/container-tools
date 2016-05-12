@@ -20,7 +20,9 @@ set -e
 
 COMMAND="$(basename ${0})"
 
+CONFIG="/etc/container-tools/config"
 MACHINES="/var/lib/machines"
+INTERFACES_D="/etc/network/interfaces.d"
 
 Parameters ()
 {
@@ -60,6 +62,29 @@ Parameters ()
 				;;
 		esac
 	done
+}
+
+Cleanup ()
+{
+	# Cleanup network configuration
+	NETWORK_VETH_EXTRA_CONF="$(awk -F= '/^network-veth-extra=/ { print $2 }' ${CONFIG}/${NAME}.conf)"
+
+	case "${NETWORK_VETH_EXTRA_CONF}" in
+		"")
+			;;
+
+		*)
+			for VETH in ${NETWORK_VETH_EXTRA_CONF}
+			do
+				INTERFACE="$(echo ${VETH} | awk -F: '{ print $1 }')"
+				FILE="${INTERFACES_D}/${INTERFACE}"
+				if [ -f "${FILE}"]
+				then
+					rm -f "${FILE}"
+				fi
+			done
+		;;
+	esac
 }
 
 Usage ()
@@ -105,3 +130,5 @@ esac
 
 # Run
 machinectl ${MODE} ${NAME}
+
+Cleanup
