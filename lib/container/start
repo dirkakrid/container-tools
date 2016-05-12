@@ -22,6 +22,7 @@ COMMAND="$(basename ${0})"
 
 CONFIG="/etc/container-tools/config"
 MACHINES="/var/lib/machines"
+INTERFACES_D="/etc/network/interfaces.d"
 
 Parameters ()
 {
@@ -197,15 +198,26 @@ then
 			;;
 	esac
 
-	NETWORK_VETH="$(awk -F= '/^network-veth=/ { print $2 }' ${CONFIG}/${NAME}.conf || echo yes)"
+	NETWORK_VETH_EXTRA_CONF="$(awk -F= '/^network-veth-extra=/ { print $2 }' ${CONFIG}/${NAME}.conf)"
+	NETWORK_VETH_EXTRA=""
 
-	case "${NETWORK_VETH}" in
-		yes)
-			NETWORK_VETH="--network-veth"
+	case "${NETWORK_VETH_EXTRA_CONF}" in
+		"")
 			;;
 
 		*)
-			NETWORK_VETH=""
+			for VETH in ${NETWORK_VETH_EXTRA_CONF}
+			do
+				NETWORK_VETH_EXTRA="${NETWORK_VETH_EXTRA} --network-veth-extra=${VETH}"
+				INTERFACE="$(echo ${VETH} | awk -F: '{ print $1 }')"
+cat > "${INTERFACES_D}/${INTERFACE}" << EOF
+auto ${INTERFACE}
+allow-hotplug ${INTERFACE}
+iface ${INTERFACE} inet manual
+	pre-up ifconfig ${INTERFACE} up
+	post-down ifconfig ${INTERFACE} down
+EOF
+			done
 			;;
 	esac
 
@@ -301,11 +313,11 @@ fi
 # Run
 case "${SET_PROPERTY}" in
 	true)
-		${SETARCH} systemd-nspawn ${BIND} ${BOOT} ${CAPABILITY} ${DIRECTORY} ${DROP_CAPABILITY} ${MACHINE} ${NETWORK_BRIDGE} ${NETWORK_VETH} ${LINK_JOURNAL} ${REGISTER} & \
+		${SETARCH} systemd-nspawn ${BIND} ${BOOT} ${CAPABILITY} ${DIRECTORY} ${DROP_CAPABILITY} ${MACHINE} ${NETWORK_BRIDGE} ${NETWORK_VETH_EXTRA} ${LINK_JOURNAL} ${REGISTER} & \
 		systemctl --runtime set-property ${NAME} ${BLOCK_IO_DEVICE_WEIGHT} ${BLOCK_IO_READ_BANDWITH} ${BLOCK_IO_WEIGHT} ${BLOCK_IO_WRITE_BANDWITH} ${CPU_QUOTA} ${CPU_SHARES} ${MEMORY_LIMIT} ${TASKS_MAX}
 		;;
 
 	*)
-		${SETARCH} systemd-nspawn ${BIND} ${BOOT} ${CAPABILITY} ${DIRECTORY} ${DROP_CAPABILITY} ${MACHINE} ${NETWORK_BRIDGE} ${NETWORK_VETH} ${LINK_JOURNAL} ${REGISTER}
+		${SETARCH} systemd-nspawn ${BIND} ${BOOT} ${CAPABILITY} ${DIRECTORY} ${DROP_CAPABILITY} ${MACHINE} ${NETWORK_BRIDGE} ${NETWORK_VETH_EXTRA} ${LINK_JOURNAL} ${REGISTER}
 		;;
 esac
