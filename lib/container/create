@@ -135,7 +135,7 @@ sed	-e "s|@CNT_AUTOSTART@|${CNT_AUTOSTART}|g" \
 	-e "s|@DIRECTORY@|${MACHINES}/${NAME}|g" \
 	-e "s|@DROP_CAPABILITY@|${DROP_CAPABILITY}|g" \
 	-e "s|@MACHINE@|${NAME}|g" \
-	-e "s|@NETWORK_VETH@|yes|g" \
+	-e "s|@NETWORK_VETH_EXTRA@|${NETWORK_VETH_EXTRA}|g" \
 	-e "s|@NETWORK_BRIDGE@|br0|g" \
 	-e "s|@LINK_JOURNAL@|no|g" \
 	-e "s|@REGISTER@|yes|g" \
